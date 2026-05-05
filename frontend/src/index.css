@@ -20,9 +20,11 @@
     --accent: #22d3ee;
     --accent-hover: #67e8f9;
     --accent-fg: #052e35;
-    --shift-morning: #bbf7d0;
+    --shift-morning: #4ade80;
     --shift-morning-fg: #052e16;
-    --shift-afternoon: #fecaca;
+    --shift-intermediate: #facc15;
+    --shift-intermediate-fg: #422006;
+    --shift-afternoon: #f87171;
     --shift-afternoon-fg: #450a0a;
     --shift-off: #ffffff;
     --shift-off-fg: #18181b;
@@ -44,9 +46,11 @@
     --accent: #0891b2;
     --accent-hover: #0e7490;
     --accent-fg: #ffffff;
-    --shift-morning: #86efac;
+    --shift-morning: #22c55e;
     --shift-morning-fg: #052e16;
-    --shift-afternoon: #fca5a5;
+    --shift-intermediate: #eab308;
+    --shift-intermediate-fg: #422006;
+    --shift-afternoon: #ef4444;
     --shift-afternoon-fg: #450a0a;
     --shift-off: #ffffff;
     --shift-off-fg: #18181b;
@@ -68,9 +72,11 @@
     --accent: #0891b2;
     --accent-hover: #0e7490;
     --accent-fg: #ffffff;
-    --shift-morning: #86efac;
+    --shift-morning: #22c55e;
     --shift-morning-fg: #052e16;
-    --shift-afternoon: #fca5a5;
+    --shift-intermediate: #eab308;
+    --shift-intermediate-fg: #422006;
+    --shift-afternoon: #ef4444;
     --shift-afternoon-fg: #450a0a;
     --shift-off: #ffffff;
     --shift-off-fg: #18181b;
@@ -138,6 +144,7 @@ body {
 
 /* Shift cell colors driven by theme variables */
 .shift-manha { background: var(--shift-morning); color: var(--shift-morning-fg); }
+.shift-intermedio { background: var(--shift-intermediate); color: var(--shift-intermediate-fg); }
 .shift-tarde { background: var(--shift-afternoon); color: var(--shift-afternoon-fg); }
 .shift-folga { background: var(--shift-off); color: var(--shift-off-fg); }
 .shift-vazio { background: var(--shift-empty); color: var(--shift-empty-fg); }

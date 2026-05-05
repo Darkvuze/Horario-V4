@@ -62,6 +62,8 @@ export default function MonthCalendar({ year, month, employee, codes, region }) 
             ? "shift-vazio"
             : kind === "manha"
             ? "shift-manha"
+            : kind === "intermedio"
+            ? "shift-intermedio"
             : kind === "tarde"
             ? "shift-tarde"
             : "shift-folga";

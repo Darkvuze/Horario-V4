@@ -142,7 +142,20 @@ export default function App() {
       // Add any new raw codes to the codes table (with empty times)
       if (Array.isArray(data.raw_codes)) {
         setCodes((prev) => {
-          const existing = new Set(prev.map((c) => c.code.toUpperCase()));
+          // Also auto-correct previously-saved entries that have empty entry hour
+          // and a wrongly inferred kind based on prefix (e.g. T2 saved as "manha").
+          const corrected = prev.map((c) => {
+            if (c.entry) return c; // user-defined hours win
+            const u = (c.code || "").toUpperCase();
+            if (/^[PT]/.test(u) && c.kind !== "tarde" && c.kind !== "folga") {
+              return { ...c, kind: "tarde" };
+            }
+            if (/^M/.test(u) && c.kind !== "manha" && c.kind !== "folga" && c.kind !== "intermedio") {
+              return { ...c, kind: "manha" };
+            }
+            return c;
+          });
+          const existing = new Set(corrected.map((c) => c.code.toUpperCase()));
           const additions = data.raw_codes
             .filter((rc) => !existing.has(rc.toUpperCase()))
             .map((rc) => ({
@@ -151,9 +164,9 @@ export default function App() {
               lunchStart: "",
               lunchEnd: "",
               exit: "",
-              kind: /^P|^T/i.test(rc) ? "tarde" : /^(D|DF|F)$/i.test(rc) ? "folga" : "manha",
+              kind: /^(D|DF|F)$/i.test(rc) ? "folga" : /^[PT]/i.test(rc) ? "tarde" : /^M/i.test(rc) ? "manha" : "manha",
             }));
-          return additions.length ? [...prev, ...additions] : prev;
+          return additions.length || corrected !== prev ? [...corrected, ...additions] : prev;
         });
       }
     } catch (e) {
@@ -389,8 +402,9 @@ export default function App() {
               )}
 
               <div className="panel p-3 text-xs text-muted-c flex flex-wrap gap-x-4 gap-y-1 items-center">
-                <span><span className="inline-block w-3 h-3 rounded shift-manha mr-1 align-middle" /> Manhã</span>
-                <span><span className="inline-block w-3 h-3 rounded shift-tarde mr-1 align-middle" /> Tarde</span>
+                <span><span className="inline-block w-3 h-3 rounded shift-manha mr-1 align-middle" /> Manhã (&lt;08:30)</span>
+                <span><span className="inline-block w-3 h-3 rounded shift-intermedio mr-1 align-middle" /> Intermédio (08:30–09:30)</span>
+                <span><span className="inline-block w-3 h-3 rounded shift-tarde mr-1 align-middle" /> Tarde (≥09:30)</span>
                 <span><span className="inline-block w-3 h-3 rounded shift-folga mr-1 border border-c align-middle" /> Folga</span>
                 <span><span className="inline-block w-2.5 h-2.5 rounded-full bg-sky-500 mr-1 align-middle" /> Feriado Açores</span>
                 <span><span className="inline-block w-2.5 h-2.5 rounded-full bg-pink-500 mr-1 align-middle" /> Feriado Continental</span>

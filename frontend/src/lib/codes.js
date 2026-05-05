@@ -24,20 +24,43 @@ export function resolveCode(code, codes) {
   if (!code) return null;
   const upper = code.toUpperCase();
   const found = codes.find((c) => c.code.toUpperCase() === upper);
-  if (found) return found;
+  if (found) return { ...found, code: found.code.toUpperCase() };
   // Heuristic fallback for unknown codes
   if (/^(D|DF|F|FER|FOL)/i.test(upper)) {
     return { code: upper, entry: "", lunchStart: "", lunchEnd: "", exit: "", kind: "folga", label: "Folga" };
   }
+  if (/^[PT]/.test(upper)) {
+    return { code: upper, entry: "", lunchStart: "", lunchEnd: "", exit: "", kind: "tarde", unknown: true };
+  }
   return { code: upper, entry: "", lunchStart: "", lunchEnd: "", exit: "", kind: "manha", unknown: true };
 }
 
+// Returns one of: "manha" | "intermedio" | "tarde" | "folga" | "vazio"
+// Time-based rules (most reliable):
+//   entry < 08:30          -> manha (green)
+//   08:30 <= entry < 09:30 -> intermedio (yellow)
+//   entry >= 09:30         -> tarde (red)
+// Without entry hour, falls back to code-prefix rules:
+//   T*, P*  -> tarde      M* -> manha     (overrides any wrongly-saved cfg.kind)
 export function inferKind(cfg) {
   if (!cfg) return "vazio";
   if (cfg.kind === "folga") return "folga";
+
   if (cfg.entry) {
-    const h = parseInt(cfg.entry.split(":")[0], 10);
-    if (!Number.isNaN(h)) return h < 12 ? "manha" : "tarde";
+    const parts = cfg.entry.split(":");
+    const h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    if (!Number.isNaN(h)) {
+      const minutes = h * 60 + (Number.isNaN(m) ? 0 : m);
+      if (minutes < 8 * 60 + 30) return "manha";
+      if (minutes < 9 * 60 + 30) return "intermedio";
+      return "tarde";
+    }
   }
-  return cfg.kind || "manha";
+
+  const code = (cfg.code || "").toUpperCase();
+  if (/^[PT]/.test(code)) return "tarde";
+  if (/^M/.test(code)) return "manha";
+
+  return cfg.kind === "intermedio" ? "intermedio" : cfg.kind || "manha";
 }
