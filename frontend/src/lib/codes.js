@@ -26,13 +26,15 @@ export function resolveCode(code, codes) {
   const found = codes.find((c) => c.code.toUpperCase() === upper);
   if (found) return { ...found, code: found.code.toUpperCase() };
   // Heuristic fallback for unknown codes
-  if (/^(D|DF|F|FER|FOL)/i.test(upper)) {
+  if (/^(D|DF|F|FER|FOL)$/i.test(upper)) {
     return { code: upper, entry: "", lunchStart: "", lunchEnd: "", exit: "", kind: "folga", label: "Folga" };
   }
-  if (/^[PT]/.test(upper)) {
-    return { code: upper, entry: "", lunchStart: "", lunchEnd: "", exit: "", kind: "tarde", unknown: true };
+  // M-prefixed codes are morning by default; everything else (T, P, IT, S, N, etc.)
+  // defaults to "tarde" — safer for airline-style rosters.
+  if (/^M/.test(upper)) {
+    return { code: upper, entry: "", lunchStart: "", lunchEnd: "", exit: "", kind: "manha", unknown: true };
   }
-  return { code: upper, entry: "", lunchStart: "", lunchEnd: "", exit: "", kind: "manha", unknown: true };
+  return { code: upper, entry: "", lunchStart: "", lunchEnd: "", exit: "", kind: "tarde", unknown: true };
 }
 
 // Returns one of: "manha" | "intermedio" | "tarde" | "folga" | "vazio"
@@ -40,8 +42,10 @@ export function resolveCode(code, codes) {
 //   entry < 08:30          -> manha (green)
 //   08:30 <= entry < 09:30 -> intermedio (yellow)
 //   entry >= 09:30         -> tarde (red)
-// Without entry hour, falls back to code-prefix rules:
-//   T*, P*  -> tarde      M* -> manha     (overrides any wrongly-saved cfg.kind)
+// Without entry hour, code-prefix rules:
+//   M*   -> manha
+//   D/DF/F -> folga (handled by cfg.kind)
+//   anything else (T, P, IT, S, etc.) -> tarde
 export function inferKind(cfg) {
   if (!cfg) return "vazio";
   if (cfg.kind === "folga") return "folga";
@@ -59,8 +63,9 @@ export function inferKind(cfg) {
   }
 
   const code = (cfg.code || "").toUpperCase();
-  if (/^[PT]/.test(code)) return "tarde";
+  if (/^(D|DF|F)$/.test(code)) return "folga";
   if (/^M/.test(code)) return "manha";
-
-  return cfg.kind === "intermedio" ? "intermedio" : cfg.kind || "manha";
+  if (cfg.kind === "intermedio") return "intermedio";
+  // Default for unknown / non-M codes: tarde (T, P, IT, S, N, etc.)
+  return "tarde";
 }
