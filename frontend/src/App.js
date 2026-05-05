@@ -395,6 +395,23 @@ export default function App() {
     return out.sort((a,b)=>a.day-b.day);
   }, [year, month]);
 
+  // Build per-code counts for the selected employee (uses raw PDF codes)
+  const codeSummary = useMemo(() => {
+    if (!employeeWithOverrides) return [];
+    const counts = {};
+    for (const d of employeeWithOverrides.days) {
+      const c = (d.code || "").trim();
+      if (!c) continue;
+      counts[c] = (counts[c] || 0) + 1;
+    }
+    return Object.entries(counts)
+      .map(([code, count]) => {
+        const cfg = resolveCode(code, codes);
+        return { code, count, kind: inferKind(cfg) };
+      })
+      .sort((a, b) => b.count - a.count);
+  }, [employeeWithOverrides, codes]);
+
   return (
     <div className="App min-h-screen">
       <header className="sticky top-0 z-20 panel" style={{borderRadius:0, borderLeft:"none", borderRight:"none", borderTop:"none"}}>
@@ -445,6 +462,28 @@ export default function App() {
               </div>
             </div>
             {error && <div className="panel p-3 text-sm text-rose-400" data-testid="main-error">{error}</div>}
+
+            {employeeWithOverrides && codeSummary.length > 0 && (
+              <div className="panel p-3 sm:p-4" data-testid="code-summary">
+                <div className="text-xs font-bold uppercase tracking-wider text-soft mb-2">
+                  Resumo de {MONTH_NAMES[month-1]} · {employeeWithOverrides.days.filter(d=>d.code).length} dias com código
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {codeSummary.map(({ code, count, kind }) => (
+                    <span
+                      key={code}
+                      data-testid={`summary-${code}`}
+                      className={`shift-${kind === 'vazio' ? 'folga' : kind} rounded-lg px-2.5 py-1 text-xs font-bold inline-flex items-center gap-1.5`}
+                    >
+                      <span className="font-mono">{code}</span>
+                      <span className="opacity-70">×</span>
+                      <span>{count}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {employeeWithOverrides ? (
               <MonthCalendar year={year} month={month} employee={employeeWithOverrides} codes={codes} region={region}
                 onCellClick={(day, code) => setEditCell({ day, current: code })}/>
