@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Three themes: dark (default), soft (grey), light. */
+:root,
+[data-theme="dark"] {
+    --app-bg: #09090b;
+    --app-bg-grad: radial-gradient(1200px 600px at 10% -10%, #0e7490 0%, transparent 50%),
+                   radial-gradient(900px 500px at 100% 110%, #1e293b 0%, transparent 60%),
+                   #09090b;
+    --panel: rgba(24, 24, 27, 0.6);
+    --panel-solid: #18181b;
+    --card: #27272a;
+    --border: #27272a;
+    --border-strong: #3f3f46;
+    --text: #f4f4f5;
+    --text-muted: #a1a1aa;
+    --text-soft: #71717a;
+    --accent: #22d3ee;
+    --accent-hover: #67e8f9;
+    --accent-fg: #052e35;
+    --shift-morning: #bbf7d0;
+    --shift-morning-fg: #052e16;
+    --shift-afternoon: #fecaca;
+    --shift-afternoon-fg: #450a0a;
+    --shift-off: #ffffff;
+    --shift-off-fg: #18181b;
+    --shift-empty: #18181b;
+    --shift-empty-fg: #a1a1aa;
+}
+
+[data-theme="soft"] {
+    --app-bg: #d4d4d8;
+    --app-bg-grad: linear-gradient(180deg, #e4e4e7 0%, #d4d4d8 100%);
+    --panel: rgba(244, 244, 245, 0.7);
+    --panel-solid: #e4e4e7;
+    --card: #f4f4f5;
+    --border: #c7c7cc;
+    --border-strong: #a1a1aa;
+    --text: #1f2937;
+    --text-muted: #4b5563;
+    --text-soft: #6b7280;
+    --accent: #0891b2;
+    --accent-hover: #0e7490;
+    --accent-fg: #ffffff;
+    --shift-morning: #86efac;
+    --shift-morning-fg: #052e16;
+    --shift-afternoon: #fca5a5;
+    --shift-afternoon-fg: #450a0a;
+    --shift-off: #ffffff;
+    --shift-off-fg: #18181b;
+    --shift-empty: #e4e4e7;
+    --shift-empty-fg: #4b5563;
+}
+
+[data-theme="light"] {
+    --app-bg: #fafafa;
+    --app-bg-grad: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+    --panel: rgba(255, 255, 255, 0.85);
+    --panel-solid: #ffffff;
+    --card: #ffffff;
+    --border: #e5e7eb;
+    --border-strong: #d4d4d8;
+    --text: #18181b;
+    --text-muted: #52525b;
+    --text-soft: #71717a;
+    --accent: #0891b2;
+    --accent-hover: #0e7490;
+    --accent-fg: #ffffff;
+    --shift-morning: #86efac;
+    --shift-morning-fg: #052e16;
+    --shift-afternoon: #fca5a5;
+    --shift-afternoon-fg: #450a0a;
+    --shift-off: #ffffff;
+    --shift-off-fg: #18181b;
+    --shift-empty: #f4f4f5;
+    --shift-empty-fg: #52525b;
+}
+
+html, body, #root {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--app-bg);
+    color: var(--text);
+    font-family: 'Manrope', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont,
+        'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    background: var(--app-bg-grad);
+    background-attachment: fixed;
+}
+
+@layer components {
+    .panel {
+        background: var(--panel);
+        backdrop-filter: blur(14px);
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+    }
+    .panel-solid {
+        background: var(--panel-solid);
+        border: 1px solid var(--border);
+    }
+    .text-main { color: var(--text); }
+    .text-muted-c { color: var(--text-muted); }
+    .text-soft { color: var(--text-soft); }
+    .border-c { border-color: var(--border); }
+    .border-strong { border-color: var(--border-strong); }
+    .btn-accent {
+        background: var(--accent);
+        color: var(--accent-fg);
+        transition: background-color 0.15s ease;
+    }
+    .btn-accent:hover { background: var(--accent-hover); }
+    .btn-ghost {
+        background: transparent;
+        color: var(--text);
+        border: 1px solid var(--border);
+        transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .btn-ghost:hover {
+        background: var(--card);
+        border-color: var(--border-strong);
+    }
+    .input-c {
+        background: var(--panel-solid);
+        color: var(--text);
+        border: 1px solid var(--border);
+    }
+    .input-c:focus {
+        outline: none;
+        border-color: var(--accent);
+    }
+}
+
+/* Shift cell colors driven by theme variables */
+.shift-manha { background: var(--shift-morning); color: var(--shift-morning-fg); }
+.shift-tarde { background: var(--shift-afternoon); color: var(--shift-afternoon-fg); }
+.shift-folga { background: var(--shift-off); color: var(--shift-off-fg); }
+.shift-vazio { background: var(--shift-empty); color: var(--shift-empty-fg); }
+
+/* Subtle entrance for cards */
+@keyframes fz-rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fz-rise { animation: fz-rise 0.35s ease-out both; }
+
+/* Hide scrollbar nicely on drawer */
+.fz-scroll::-webkit-scrollbar { width: 6px; }
+.fz-scroll::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 3px;
+}

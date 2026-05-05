@@ -1,0 +1,2 @@
+/* Component-scoped tweaks (inherits from index.css) */
+.App { min-height: 100vh; }
