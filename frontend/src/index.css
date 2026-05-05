@@ -166,12 +166,12 @@ body {
 }
 .shift-vazio { background: var(--shift-empty); color: var(--shift-empty-fg); }
 
-/* Today's highlight - static intermediate blue ring + soft glow */
+/* Today's highlight - static medium blue thin ring */
 .fz-today {
     box-shadow:
-        inset 0 0 0 1px #2563eb,
+        inset 0 0 0 1px #3b82f6,
         0 0 0 1px #3b82f6,
-        0 0 10px 1px rgba(59, 130, 246, 0.55);
+        0 0 6px 0 rgba(96, 165, 250, 0.55);
     z-index: 1;
     position: relative;
 }
@@ -193,7 +193,7 @@ body {
     line-height: 1;
 }
 .fz-day-chip-today {
-    background: #2563eb;
+    background: #3b82f6;
     color: #ffffff;
 }
 .fz-day-chip-past {
