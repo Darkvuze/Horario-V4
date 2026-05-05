@@ -1,6 +1,6 @@
 {
-  "name": "FaZes - Escala & Calendário",
-  "short_name": "FaZes",
+  "name": "Horário Trabalho",
+  "short_name": "Horário",
   "description": "Carrega a tua escala em PDF e tem calendário, feriados PT e alarmes prontos.",
   "start_url": "/",
   "scope": "/",

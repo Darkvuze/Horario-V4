@@ -417,9 +417,9 @@ export default function App() {
       <header className="sticky top-0 z-20 panel" style={{borderRadius:0, borderLeft:"none", borderRight:"none", borderTop:"none"}}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3 relative">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-lg" style={{background:"var(--accent)", color:"var(--accent-fg)"}}>Fz</div>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-base" style={{background:"var(--accent)", color:"var(--accent-fg)"}}>HT</div>
             <div>
-              <h1 className="text-base sm:text-lg font-extrabold tracking-tight text-main leading-none">FaZes</h1>
+              <h1 className="text-base sm:text-lg font-extrabold tracking-tight text-main leading-none">Horário Trabalho</h1>
               <p className="text-[10px] sm:text-xs text-soft leading-tight">{me && employees.find(e=>e.row===me)?.name ? `Olá, ${employees.find(e=>e.row===me).name.split(' ')[0]}` : "Escalas · Calendário"}</p>
             </div>
           </div>
