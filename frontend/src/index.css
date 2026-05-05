@@ -166,12 +166,12 @@ body {
 }
 .shift-vazio { background: var(--shift-empty); color: var(--shift-empty-fg); }
 
-/* Today's highlight - static dark blue ring + soft glow */
+/* Today's highlight - static intermediate blue ring + soft glow */
 .fz-today {
     box-shadow:
-        inset 0 0 0 2px #1e40af,
-        0 0 0 2px #1d4ed8,
-        0 0 14px 2px rgba(30, 64, 175, 0.7);
+        inset 0 0 0 1px #2563eb,
+        0 0 0 1px #3b82f6,
+        0 0 10px 1px rgba(59, 130, 246, 0.55);
     z-index: 1;
     position: relative;
 }
@@ -193,7 +193,7 @@ body {
     line-height: 1;
 }
 .fz-day-chip-today {
-    background: #1e40af;
+    background: #2563eb;
     color: #ffffff;
 }
 .fz-day-chip-past {
