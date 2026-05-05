@@ -28,6 +28,8 @@
     --shift-afternoon-fg: #450a0a;
     --shift-off: #ffffff;
     --shift-off-fg: #18181b;
+    --shift-vacation: #c7d2fe;
+    --shift-vacation-fg: #1e1b4b;
     --shift-empty: #18181b;
     --shift-empty-fg: #a1a1aa;
 }
@@ -54,6 +56,8 @@
     --shift-afternoon-fg: #450a0a;
     --shift-off: #ffffff;
     --shift-off-fg: #18181b;
+    --shift-vacation: #a5b4fc;
+    --shift-vacation-fg: #1e1b4b;
     --shift-empty: #e4e4e7;
     --shift-empty-fg: #4b5563;
 }
@@ -80,6 +84,8 @@
     --shift-afternoon-fg: #450a0a;
     --shift-off: #ffffff;
     --shift-off-fg: #18181b;
+    --shift-vacation: #a5b4fc;
+    --shift-vacation-fg: #1e1b4b;
     --shift-empty: #f4f4f5;
     --shift-empty-fg: #52525b;
 }
@@ -147,6 +153,17 @@ body {
 .shift-intermedio { background: var(--shift-intermediate); color: var(--shift-intermediate-fg); }
 .shift-tarde { background: var(--shift-afternoon); color: var(--shift-afternoon-fg); }
 .shift-folga { background: var(--shift-off); color: var(--shift-off-fg); }
+.shift-ferias {
+    background: var(--shift-vacation);
+    color: var(--shift-vacation-fg);
+    background-image: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 6px,
+        rgba(255, 255, 255, 0.35) 6px,
+        rgba(255, 255, 255, 0.35) 8px
+    );
+}
 .shift-vazio { background: var(--shift-empty); color: var(--shift-empty-fg); }
 
 /* Subtle entrance for cards */

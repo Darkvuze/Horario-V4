@@ -15,7 +15,7 @@ export const DEFAULT_CODES = [
   { code: "796", entry: "12:00", lunchStart: "16:00", lunchEnd: "17:00", exit: "20:00", kind: "tarde" },
   { code: "D",   entry: "",      lunchStart: "",      lunchEnd: "",      exit: "",      kind: "folga", label: "Folga" },
   { code: "DF",  entry: "",      lunchStart: "",      lunchEnd: "",      exit: "",      kind: "folga", label: "Folga" },
-  { code: "F",   entry: "",      lunchStart: "",      lunchEnd: "",      exit: "",      kind: "folga", label: "Férias" },
+  { code: "F",   entry: "",      lunchStart: "",      lunchEnd: "",      exit: "",      kind: "ferias", label: "Férias" },
 ];
 
 // Resolve a code (e.g. "M76") to its config + its kind.
@@ -26,7 +26,10 @@ export function resolveCode(code, codes) {
   const found = codes.find((c) => c.code.toUpperCase() === upper);
   if (found) return { ...found, code: found.code.toUpperCase() };
   // Heuristic fallback for unknown codes
-  if (/^(D|DF|F|FER|FOL)$/i.test(upper)) {
+  if (/^F$|^FER/i.test(upper)) {
+    return { code: upper, entry: "", lunchStart: "", lunchEnd: "", exit: "", kind: "ferias", label: "Férias" };
+  }
+  if (/^(D|DF|FOL)$/i.test(upper)) {
     return { code: upper, entry: "", lunchStart: "", lunchEnd: "", exit: "", kind: "folga", label: "Folga" };
   }
   // M-prefixed codes are morning by default; everything else (T, P, IT, S, N, etc.)
@@ -37,17 +40,10 @@ export function resolveCode(code, codes) {
   return { code: upper, entry: "", lunchStart: "", lunchEnd: "", exit: "", kind: "tarde", unknown: true };
 }
 
-// Returns one of: "manha" | "intermedio" | "tarde" | "folga" | "vazio"
-// Time-based rules (most reliable):
-//   entry < 08:30          -> manha (green)
-//   08:30 <= entry < 09:30 -> intermedio (yellow)
-//   entry >= 09:30         -> tarde (red)
-// Without entry hour, code-prefix rules:
-//   M*   -> manha
-//   D/DF/F -> folga (handled by cfg.kind)
-//   anything else (T, P, IT, S, etc.) -> tarde
+// Returns one of: "manha" | "intermedio" | "tarde" | "folga" | "ferias" | "vazio"
 export function inferKind(cfg) {
   if (!cfg) return "vazio";
+  if (cfg.kind === "ferias") return "ferias";
   if (cfg.kind === "folga") return "folga";
 
   if (cfg.entry) {
@@ -63,9 +59,9 @@ export function inferKind(cfg) {
   }
 
   const code = (cfg.code || "").toUpperCase();
-  if (/^(D|DF|F)$/.test(code)) return "folga";
+  if (/^F$|^FER/.test(code)) return "ferias";
+  if (/^(D|DF)$/.test(code)) return "folga";
   if (/^M/.test(code)) return "manha";
   if (cfg.kind === "intermedio") return "intermedio";
-  // Default for unknown / non-M codes: tarde (T, P, IT, S, N, etc.)
   return "tarde";
 }

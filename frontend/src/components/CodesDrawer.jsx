@@ -174,6 +174,7 @@ export default function CodesDrawer({ open, onClose, codes, setCodes }) {
               <option value="intermedio">Intermédio</option>
               <option value="tarde">Tarde</option>
               <option value="folga">Folga</option>
+              <option value="ferias">Férias</option>
             </select>
             <button
               onClick={addNew}
@@ -191,6 +192,7 @@ export default function CodesDrawer({ open, onClose, codes, setCodes }) {
             <span><span className="inline-block w-3 h-3 rounded shift-intermedio mr-1 align-middle" /> Intermédio (08:30–09:30)</span>
             <span><span className="inline-block w-3 h-3 rounded shift-tarde mr-1 align-middle" /> Tarde (≥09:30)</span>
             <span><span className="inline-block w-3 h-3 rounded shift-folga mr-1 border border-c align-middle" /> Folga</span>
+            <span><span className="inline-block w-3 h-3 rounded shift-ferias mr-1 align-middle" /> Férias</span>
           </div>
         </div>
       </aside>

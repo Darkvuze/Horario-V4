@@ -118,7 +118,8 @@ function TradesDrawer({ open, onClose, employees, codes, year, month, me }) {
     return { ...e, code, kind };
   }).filter(e => {
     if (filter === "all") return e.code;
-    if (filter === "folga") return e.kind === "folga";
+    if (filter === "folga") return e.kind === "folga"; // exclui férias
+    if (filter === "ferias") return e.kind === "ferias";
     return e.kind === filter;
   });
 
@@ -138,7 +139,8 @@ function TradesDrawer({ open, onClose, employees, codes, year, month, me }) {
           <label className="text-xs text-soft">Quero ver
             <select value={filter} onChange={e=>setFilter(e.target.value)} data-testid="trade-filter" className="w-full input-c rounded px-2 py-2 mt-1 text-sm">
               <option value="all">Todos</option>
-              <option value="folga">Quem tem folga</option>
+              <option value="folga">Quem tem folga (D/DF)</option>
+              <option value="ferias">Quem está de férias (F)</option>
               <option value="manha">Quem está de manhã</option>
               <option value="tarde">Quem está de tarde</option>
             </select>
@@ -326,15 +328,16 @@ export default function App() {
           const corrected = prev.map(c => {
             if (c.entry) return c;
             const u = (c.code||"").toUpperCase();
-            if (/^(D|DF|F)$/.test(u)) return { ...c, kind: "folga" };
+            if (/^F$|^FER/.test(u)) return { ...c, kind: "ferias" };
+            if (/^(D|DF)$/.test(u)) return { ...c, kind: "folga" };
             if (/^M/.test(u) && c.kind !== "manha" && c.kind !== "intermedio") return { ...c, kind: "manha" };
-            if (!/^M/.test(u) && c.kind !== "tarde" && c.kind !== "folga") return { ...c, kind: "tarde" };
+            if (!/^M/.test(u) && c.kind !== "tarde" && c.kind !== "folga" && c.kind !== "ferias") return { ...c, kind: "tarde" };
             return c;
           });
           const existing = new Set(corrected.map(c => c.code.toUpperCase()));
           const adds = data.raw_codes.filter(rc => !existing.has(rc.toUpperCase())).map(rc => ({
             code: rc.toUpperCase(), entry:"", lunchStart:"", lunchEnd:"", exit:"",
-            kind: /^(D|DF|F)$/i.test(rc) ? "folga" : /^M/i.test(rc) ? "manha" : "tarde",
+            kind: /^F$|^FER/i.test(rc) ? "ferias" : /^(D|DF)$/i.test(rc) ? "folga" : /^M/i.test(rc) ? "manha" : "tarde",
           }));
           return adds.length ? [...corrected, ...adds] : corrected;
         });
@@ -472,6 +475,7 @@ export default function App() {
               <span><span className="inline-block w-3 h-3 rounded shift-intermedio mr-1 align-middle"/> Intermédio (08:30–09:30)</span>
               <span><span className="inline-block w-3 h-3 rounded shift-tarde mr-1 align-middle"/> Tarde (≥09:30)</span>
               <span><span className="inline-block w-3 h-3 rounded shift-folga mr-1 border border-c align-middle"/> Folga</span>
+              <span><span className="inline-block w-3 h-3 rounded shift-ferias mr-1 align-middle"/> Férias</span>
               <span className="opacity-60">· Toca numa célula para mudar o código</span>
             </div>
           </div>

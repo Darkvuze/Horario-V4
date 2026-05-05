@@ -56,6 +56,7 @@ export default function MonthCalendar({ year, month, employee, codes, region, on
             : kind === "manha" ? "shift-manha"
             : kind === "intermedio" ? "shift-intermedio"
             : kind === "tarde" ? "shift-tarde"
+            : kind === "ferias" ? "shift-ferias"
             : "shift-folga";
 
           const handleClick = () => onCellClick?.(dayNum, code);
