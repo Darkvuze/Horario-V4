@@ -287,7 +287,19 @@ export default function App() {
   const [editCell, setEditCell] = useState(null);
   const fileInput = useRef(null);
 
-  useEffect(() => { document.documentElement.setAttribute("data-theme", theme); localStorage.setItem("fazes:theme", theme); }, [theme]);
+  // Theme application + dynamic browser status bar color
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("fazes:theme", theme);
+    const colors = { dark: "#09090b", soft: "#d4d4d8", light: "#ffffff" };
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.setAttribute("name", "theme-color");
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute("content", colors[theme] || "#09090b");
+  }, [theme]);
   useEffect(() => { Storage.saveCodes(codes); }, [codes]);
   useEffect(() => { Storage.saveSelected(selectedRow); }, [selectedRow]);
   useEffect(() => { Storage.saveRegion(region); }, [region]);
