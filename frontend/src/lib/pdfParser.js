@@ -130,10 +130,12 @@ function normalizeTime(t) {
   return `${h}:${m}`;
 }
 
-const TIME_RE = "\\d{1,2}:\\d{2}";
-// Pattern A: CODE  <label>  HH:MM  HH:MM  Ref  HH:MM  HH:MM
+// Times can include optional seconds, e.g. "08:00" or "08:00:00".
+const TIME_RE = "\\d{1,2}:\\d{2}(?::\\d{2})?";
+// Pattern A: CODE  <label>  HH:MM  HH:MM  [|]  Ref[:]  HH:MM  HH:MM
+// Some PDFs print "| REF: 13:00 14:00" instead of "Ref 13:00 14:00".
 const LEGEND_FULL = new RegExp(
-  `^([A-Z0-9][A-Z0-9]{0,4})\\s+(.+?)\\s+(${TIME_RE})\\s+(${TIME_RE})\\s+Ref\\s+(${TIME_RE})\\s+(${TIME_RE})\\s*$`,
+  `^([A-Z0-9][A-Z0-9]{0,4})\\s+(.+?)\\s+(${TIME_RE})\\s+(${TIME_RE})\\s*\\|?\\s*Ref:?\\s+(${TIME_RE})\\s+(${TIME_RE})\\s*$`,
   "i"
 );
 // Pattern B: CODE  <label>  HH:MM  HH:MM     (no lunch)
@@ -149,8 +151,8 @@ const LEGEND_RANGE = new RegExp(
 // Pattern D: CODE <label>     (no times — folga / férias / event codes)
 const LEGEND_TEXT_ONLY = /^([A-Z0-9][A-Z0-9]{0,4})\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s./-]+)$/;
 
-const OFF_KEYWORDS = /\b(férias|ferias|folga|casamento|formação|formacao|deslocações|deslocacoes|deslocacao|deslocação|dispensa|feriado|baixa|atestado|maternidade|parental)\b/i;
-const FERIAS_KEYWORDS = /\b(férias|ferias)\b/i;
+const OFF_KEYWORDS = /\b(férias|ferias|féria|feria|folga|casamento|formação|formacao|deslocações|deslocacoes|deslocacao|deslocação|dispensa|feriado|baixa|atestado|maternidade|parental|descanso)\b/i;
+const FERIAS_KEYWORDS = /\b(férias|ferias|féria|feria)\b/i;
 
 function inferKindFromLabel(label, entry) {
   if (FERIAS_KEYWORDS.test(label)) return "ferias";
@@ -231,40 +233,47 @@ function parseLegendLine(text) {
   return null;
 }
 
-// Some PDFs glue two legend entries on the same physical line, e.g.:
-// "IT2 SP T2 12:00 20:30 Ref 14:00 15:00 M13 SP M13 08:00 16:30 Ref 12:00 13:00"
-// We split such glued lines on a heuristic boundary: the appearance of a
-// new ALL-CAPS short code right after a time token.
-function splitGluedLegendLines(line) {
-  const t = line.trim();
-  if (!t) return [];
-  // Find boundaries: a HH:MM followed by spaces and a NEW code-like token.
-  const parts = [];
-  const splitRe = /(\d{1,2}:\d{2})\s+(?=[A-Z0-9]{1,5}\s)/g;
-  let lastIdx = 0;
-  let match;
-  const indices = [];
-  while ((match = splitRe.exec(t)) !== null) {
-    indices.push(match.index + match[1].length);
+// Split a line's words into "cells" using X-coordinate gaps.
+// Legend rows typically pack 5-6 pill-like entries side-by-side (each pill is
+// a colored rectangle + code + label + times). By looking at the horizontal
+// distance between consecutive words we can detect where a new pill starts:
+// the gap between pills is significantly larger than the gap within a pill.
+function splitLineByCells(words) {
+  if (!words || words.length === 0) return [];
+  const sorted = [...words].sort((a, b) => a.x0 - b.x0);
+  if (sorted.length === 1) return [sorted[0].text.trim()];
+
+  // Compute positive gaps between consecutive words.
+  const gaps = [];
+  for (let i = 1; i < sorted.length; i++) {
+    gaps.push(sorted[i].x0 - sorted[i - 1].x1);
   }
-  if (indices.length === 0) return [t];
-  for (const idx of indices) {
-    parts.push(t.slice(lastIdx, idx).trim());
-    lastIdx = idx;
+  const positive = gaps.filter((g) => g > 0).sort((a, b) => a - b);
+  const median = positive.length
+    ? positive[Math.floor(positive.length / 2)]
+    : 5;
+  // Threshold: a gap must be noticeably larger than the median intra-cell gap.
+  // We also enforce an absolute minimum so very tight lines don't split.
+  const threshold = Math.max(median * 2.5 + 2, 15);
+
+  const cells = [[sorted[0]]];
+  for (let i = 1; i < sorted.length; i++) {
+    const gap = sorted[i].x0 - sorted[i - 1].x1;
+    if (gap > threshold) cells.push([sorted[i]]);
+    else cells[cells.length - 1].push(sorted[i]);
   }
-  parts.push(t.slice(lastIdx).trim());
-  // Only return splits that look like multiple legend entries.
-  const valid = parts.filter((p) => /^[A-Z0-9]{1,5}\s/.test(p));
-  return valid.length >= 2 ? valid : [t];
+  return cells
+    .map((c) => c.map((w) => w.text).join(" ").trim())
+    .filter(Boolean);
 }
 
 function extractLegend(allLines) {
   const legend = {};
   for (const ln of allLines) {
-    const text = ln.words.map((w) => w.text).join(" ").trim();
-    const candidates = splitGluedLegendLines(text);
-    for (const cand of candidates) {
-      const entry = parseLegendLine(cand);
+    // Primary: split by word-level X gaps (handles "704 Casamento | 796 Formação | ...").
+    const cells = splitLineByCells(ln.words);
+    for (const cell of cells) {
+      const entry = parseLegendLine(cell);
       if (entry && !legend[entry.code]) {
         legend[entry.code] = entry;
       }

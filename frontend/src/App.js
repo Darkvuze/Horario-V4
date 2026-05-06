@@ -431,15 +431,19 @@ export default function App() {
             return c;
           });
           // Second pass: add codes from the PDF that weren't in the user's list.
+          // Merge raw_codes (actually used in the grid) with legend keys
+          // (codes defined at the bottom of the PDF, even if unused this month).
           const existing = new Set(corrected.map(c => c.code.toUpperCase()));
-          const adds = data.raw_codes
-            .filter(rc => !existing.has(rc.toUpperCase()))
+          const fromGrid = (data.raw_codes || []).map(c => c.toUpperCase());
+          const fromLegendKeys = Object.keys(legend);
+          const allCandidates = Array.from(new Set([...fromGrid, ...fromLegendKeys]));
+          const adds = allCandidates
+            .filter(rc => !existing.has(rc))
             .map(rc => {
-              const u = rc.toUpperCase();
-              const fromLegend = legend[u];
+              const fromLegend = legend[rc];
               if (fromLegend) {
                 return {
-                  code: u,
+                  code: rc,
                   entry: fromLegend.entry || "",
                   lunchStart: fromLegend.lunchStart || "",
                   lunchEnd: fromLegend.lunchEnd || "",
@@ -449,7 +453,7 @@ export default function App() {
                 };
               }
               return {
-                code: u, entry: "", lunchStart: "", lunchEnd: "", exit: "",
+                code: rc, entry: "", lunchStart: "", lunchEnd: "", exit: "",
                 kind: /^F$|^FER/i.test(rc) ? "ferias" : /^(D|DF)$/i.test(rc) ? "folga" : /^M/i.test(rc) ? "manha" : "tarde",
               };
             });
