@@ -36,7 +36,28 @@
         <script>
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function () {
-                    navigator.serviceWorker.register('/sw.js').catch(function () {});
+                    navigator.serviceWorker.register('/sw.js').then(function (reg) {
+                        // Force-check for an updated SW on every page load.
+                        reg.update().catch(function () {});
+                        // When a new SW is found, install it and tell it to take
+                        // over immediately so the user gets the latest bundle.
+                        reg.addEventListener('updatefound', function () {
+                            var nw = reg.installing;
+                            if (!nw) return;
+                            nw.addEventListener('statechange', function () {
+                                if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                                    nw.postMessage({ type: 'SKIP_WAITING' });
+                                }
+                            });
+                        });
+                    }).catch(function () {});
+                    // Reload once the new SW activates so the page runs the new bundle.
+                    var didReload = false;
+                    navigator.serviceWorker.addEventListener('controllerchange', function () {
+                        if (didReload) return;
+                        didReload = true;
+                        window.location.reload();
+                    });
                 });
             }
         </script>
