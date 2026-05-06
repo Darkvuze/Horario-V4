@@ -57,9 +57,11 @@
     "zod": "^3.24.4"
   },
   "scripts": {
-    "start": "craco start",
-    "build": "craco build",
-    "test": "craco test"
+    "copy-pdf-worker": "node -e \"const fs=require('fs'),path=require('path');const src=path.join('node_modules','pdfjs-dist','build','pdf.worker.min.mjs');const dst=path.join('public','pdf.worker.min.mjs');if(fs.existsSync(src)){fs.copyFileSync(src,dst);console.log('pdf.worker copied to',dst);}else{console.warn('pdfjs-dist worker not found at',src);}\"",
+    "start": "yarn copy-pdf-worker && craco start",
+    "build": "yarn copy-pdf-worker && craco build",
+    "test": "craco test",
+    "postinstall": "yarn copy-pdf-worker"
   },
   "browserslist": {
     "production": [

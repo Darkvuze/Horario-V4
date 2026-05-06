@@ -2,13 +2,11 @@
 // Port of backend/server.py::parse_schedule_pdf — keeps the same output shape
 // so App.js can use it as a drop-in replacement (no backend needed).
 import * as pdfjsLib from "pdfjs-dist/build/pdf.mjs";
-// Use the ESM worker shipped with pdfjs-dist. Webpack 5 resolves `new URL(..., import.meta.url)`
-// and emits a separate chunk that we then point pdfjs to.
-// (Works both in CRA/Craco dev server and in a Vercel-style production build.)
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.mjs",
-  import.meta.url
-).toString();
+// Use the worker copy that lives in /public so the browser fetches it from the
+// site's root with the correct MIME type. Bundling via `new URL(..., import.meta.url)`
+// works in dev but breaks on some static hosts (e.g. Vercel returns the file but
+// the dynamic ESM import fails). A plain static URL is the most reliable path.
+pdfjsLib.GlobalWorkerOptions.workerSrc = `${process.env.PUBLIC_URL || ""}/pdf.worker.min.mjs`;
 
 const MONTH_TOKENS = {
   JAN: 1, FEV: 2, MAR: 3, ABR: 4, MAI: 5, JUN: 6,
