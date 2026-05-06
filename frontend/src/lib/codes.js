@@ -1,21 +1,42 @@
 // Default shift codes seeded into the side panel.
+// Pre-configured with the actual SP/Sata schedule codes.
+// Ordered by entry time (earliest first), off-codes at the bottom.
 // Times use HH:MM (24h). User can edit/add/remove inside the app.
-// `kind`: "manha" (morning), "tarde" (afternoon), "folga" (off).
+// `kind`: "manha" (morning), "intermedio" (yellow), "tarde" (afternoon),
+//         "folga" (off, white) or "ferias" (vacation, blue striped).
 export const DEFAULT_CODES = [
-  { code: "M76", entry: "07:00", lunchStart: "11:00", lunchEnd: "12:00", exit: "15:00", kind: "manha" },
-  { code: "M50", entry: "06:00", lunchStart: "10:00", lunchEnd: "11:00", exit: "14:00", kind: "manha" },
-  { code: "M14", entry: "08:00", lunchStart: "12:00", lunchEnd: "13:00", exit: "16:00", kind: "manha" },
-  { code: "M13", entry: "08:30", lunchStart: "12:30", lunchEnd: "13:30", exit: "16:30", kind: "manha" },
-  { code: "M7",  entry: "07:00", lunchStart: "11:00", lunchEnd: "12:00", exit: "15:00", kind: "manha" },
-  { code: "M42", entry: "09:00", lunchStart: "13:00", lunchEnd: "14:00", exit: "17:00", kind: "manha" },
-  { code: "P16", entry: "13:00", lunchStart: "17:00", lunchEnd: "18:00", exit: "21:00", kind: "tarde" },
-  { code: "P24", entry: "14:00", lunchStart: "18:00", lunchEnd: "19:00", exit: "22:00", kind: "tarde" },
-  { code: "P34", entry: "15:00", lunchStart: "19:00", lunchEnd: "20:00", exit: "23:00", kind: "tarde" },
-  { code: "50A", entry: "13:30", lunchStart: "17:30", lunchEnd: "18:30", exit: "21:30", kind: "tarde" },
-  { code: "796", entry: "12:00", lunchStart: "16:00", lunchEnd: "17:00", exit: "20:00", kind: "tarde" },
-  { code: "D",   entry: "",      lunchStart: "",      lunchEnd: "",      exit: "",      kind: "folga", label: "Folga" },
-  { code: "DF",  entry: "",      lunchStart: "",      lunchEnd: "",      exit: "",      kind: "folga", label: "Folga" },
+  // Manhã (entrada < 08:30) — ordenado por hora
+  { code: "M7",  entry: "07:30", lunchStart: "12:00", lunchEnd: "13:00", exit: "16:00", kind: "manha" },
+  { code: "P41", entry: "07:30", lunchStart: "",      lunchEnd: "",      exit: "12:30", kind: "manha",  label: "PT41" },
+  { code: "M13", entry: "08:00", lunchStart: "12:00", lunchEnd: "13:00", exit: "16:30", kind: "manha" },
+  { code: "M14", entry: "08:00", lunchStart: "12:30", lunchEnd: "13:30", exit: "16:30", kind: "manha" },
+  { code: "P16", entry: "08:00", lunchStart: "",      lunchEnd: "",      exit: "13:00", kind: "manha",  label: "PT16" },
+
+  // Intermédio (08:30 ≤ entrada < 09:30)
+  { code: "M37", entry: "09:00", lunchStart: "13:00", lunchEnd: "14:00", exit: "17:30", kind: "intermedio" },
+  { code: "M42", entry: "09:00", lunchStart: "12:30", lunchEnd: "14:00", exit: "18:00", kind: "intermedio" },
+
+  // Tarde (entrada ≥ 09:30) — ordenado por hora
+  { code: "M50", entry: "09:30", lunchStart: "13:30", lunchEnd: "15:00", exit: "18:30", kind: "tarde" },
+  { code: "50A", entry: "09:30", lunchStart: "13:00", lunchEnd: "15:00", exit: "19:00", kind: "tarde",  label: "M50A" },
+  { code: "M76", entry: "11:30", lunchStart: "13:30", lunchEnd: "15:00", exit: "20:30", kind: "tarde" },
+  { code: "IT2", entry: "12:00", lunchStart: "14:00", lunchEnd: "15:00", exit: "20:30", kind: "tarde",  label: "T2" },
+  { code: "T6",  entry: "13:00", lunchStart: "18:00", lunchEnd: "19:00", exit: "21:30", kind: "tarde" },
+  { code: "P34", entry: "15:00", lunchStart: "",      lunchEnd: "",      exit: "20:00", kind: "tarde",  label: "PT34" },
+  { code: "P24", entry: "16:00", lunchStart: "",      lunchEnd: "",      exit: "21:00", kind: "tarde",  label: "PT24" },
+
+  // Sem horas fixas — eventos
+  { code: "720", entry: "",      lunchStart: "",      lunchEnd: "",      exit: "",      kind: "tarde",  label: "Deslocações" },
+  { code: "796", entry: "",      lunchStart: "",      lunchEnd: "",      exit: "",      kind: "tarde",  label: "Formação" },
+
+  // Folgas / off
+  { code: "D",   entry: "",      lunchStart: "",      lunchEnd: "",      exit: "",      kind: "folga",  label: "Folga" },
+  { code: "DF",  entry: "",      lunchStart: "",      lunchEnd: "",      exit: "",      kind: "folga",  label: "Dispensa em Feriado" },
+  { code: "704", entry: "",      lunchStart: "",      lunchEnd: "",      exit: "",      kind: "folga",  label: "Casamento" },
+
+  // Férias
   { code: "F",   entry: "",      lunchStart: "",      lunchEnd: "",      exit: "",      kind: "ferias", label: "Férias" },
+  { code: "791", entry: "",      lunchStart: "",      lunchEnd: "",      exit: "",      kind: "ferias", label: "Férias Ano Anterior" },
 ];
 
 // Resolve a code (e.g. "M76") to its config + its kind.

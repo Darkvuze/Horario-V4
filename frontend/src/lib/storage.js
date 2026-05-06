@@ -1,5 +1,5 @@
 const KEYS = {
-  CODES: "fazes:codes:v1",
+  CODES: "fazes:codes:v2",
   SCHEDULE: "fazes:schedule:v1",
   SELECTED: "fazes:selected:v1",
   REGION: "fazes:region:v1",
