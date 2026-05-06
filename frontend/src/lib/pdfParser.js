@@ -88,7 +88,28 @@ function groupWordsIntoLines(words, yTol = 4.0) {
   return lines;
 }
 
-const EMPLOYEE_RE = /^(5\d{7})\s*[-–]\s*(.+)$/;
+// Employee row patterns — generic enough to work across different workplaces.
+// We accept any numeric ID with 4-10 digits (covers SATA's 5XXXXXXX, OAEs,
+// restaurant chains, retail, etc.) and any reasonable name. We require either
+// a dash separator or an obvious "Name LastName" pattern to avoid matching
+// random rows like footers or totals.
+const NAME_CHARS = "A-Za-zÀ-ÿ\\u00C0-\\u017F";
+//   "12345678 - João Silva" / "12345678 – João Silva" / "12345678 — João Silva"
+const EMPLOYEE_RE = new RegExp(
+  `^(\\d{4,10})\\s*[-–—]\\s*([${NAME_CHARS}].*?)$`
+);
+//   "João Silva 12345678" — name first, ID at the very end
+const EMPLOYEE_RE_REVERSE = new RegExp(
+  `^([${NAME_CHARS}][${NAME_CHARS}\\s.'\\-]{2,})\\s+(\\d{4,10})$`
+);
+
+function matchEmployeeRow(rowText) {
+  let m = rowText.match(EMPLOYEE_RE);
+  if (m) return { id: m[1], name: m[2].trim() };
+  m = rowText.match(EMPLOYEE_RE_REVERSE);
+  if (m) return { id: m[2], name: m[1].trim() };
+  return null;
+}
 
 export async function parseSchedulePdf(file) {
   const buf = await file.arrayBuffer();
@@ -173,11 +194,7 @@ export async function parseSchedulePdf(file) {
     // Iterate over data rows after the header
     for (let i = dayHeaderIdx + 1; i < lines.length; i++) {
       const ln = lines[i];
-      const rowText = ln.words.map((w) => w.text).join(" ").trim();
-      const empMatch = rowText.match(EMPLOYEE_RE);
-      if (!empMatch) continue;
 
-      const empId = empMatch[1];
       const firstDayX = dayPositions[0][1];
       const colWidth =
         dayPositions.length > 1
@@ -191,8 +208,22 @@ export async function parseSchedulePdf(file) {
         if (w.x0 < cutoffX) nameWords.push(w);
         else codeWords.push(w);
       }
-      const nameText = nameWords.map((w) => w.text).join(" ");
-      const nameClean = nameText.replace(/^5\d{7}\s*[-–]\s*/, "").trim();
+
+      // Try matching only on the LEFT block (name + ID), not the full row.
+      // This is what lets us recognise reverse-format rows like
+      // "João Silva  50001234" because the ID is the last token of the
+      // name block (the codes that come next live in the right block).
+      const leftText = nameWords.map((w) => w.text).join(" ").trim();
+      if (!leftText) continue;
+      const emp = matchEmployeeRow(leftText);
+      if (!emp) continue;
+
+      const empId = emp.id;
+      // Strip the ID + separator at start OR end of the name area to keep only the human name.
+      const nameClean = leftText
+        .replace(/^\d{4,10}\s*[-–—]\s*/, "")
+        .replace(/\s*[-–—]?\s*\d{4,10}\s*$/, "")
+        .trim() || emp.name;
 
       const dayToCode = {};
       for (const w of codeWords) {

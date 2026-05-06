@@ -111,6 +111,18 @@ user_problem_statement: |
      que guarda e altera os dados do horário e as cores.
 
 frontend:
+  - task: "Generic employee parser (any workplace, any ID format)"
+    implemented: true
+    working: true
+    file: "frontend/src/lib/pdfParser.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "main"
+        -comment: "Replaced strict regex /^(5\\d{7})\\s*[-–]\\s*(.+)$/ with three patterns: ID-first with dash, name-first with ID at end, applied only to the LEFT block (left of the first day column) so codes don't break the $ anchor. Accepts any 4-10 digit ID. Verified end-to-end with 6 different formats: SATA 5xxxxxxx, OAE 6xxxxxxx, short 12345, reverse 'Name 67890123', 4xxxxxxx, multi-word reverse — all 6 detected with correct names and IDs. App now works with any work-schedule PDF, not just SATA."
+
   - task: "Frontend-only PDF parser (offline / no backend)"
     implemented: true
     working: true
