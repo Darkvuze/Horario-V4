@@ -188,9 +188,9 @@ export default function CodesDrawer({ open, onClose, codes, setCodes }) {
 
         <div className="absolute bottom-0 left-0 right-0 px-5 py-3 border-t border-c panel-solid">
           <div className="text-xs text-soft leading-relaxed flex flex-wrap gap-x-3 gap-y-1 items-center">
-            <span><span className="inline-block w-3 h-3 rounded shift-manha mr-1 align-middle" /> Manhã (&lt;08:30)</span>
-            <span><span className="inline-block w-3 h-3 rounded shift-intermedio mr-1 align-middle" /> Intermédio (08:30–09:30)</span>
-            <span><span className="inline-block w-3 h-3 rounded shift-tarde mr-1 align-middle" /> Tarde (≥09:30)</span>
+            <span><span className="inline-block w-3 h-3 rounded shift-manha mr-1 align-middle" /> Manhã (≤08:30)</span>
+            <span><span className="inline-block w-3 h-3 rounded shift-intermedio mr-1 align-middle" /> Intermédio (08:31–09:30)</span>
+            <span><span className="inline-block w-3 h-3 rounded shift-tarde mr-1 align-middle" /> Tarde (≥09:31)</span>
             <span><span className="inline-block w-3 h-3 rounded shift-folga mr-1 border border-c align-middle" /> Folga</span>
             <span><span className="inline-block w-3 h-3 rounded shift-ferias mr-1 align-middle" /> Férias</span>
           </div>

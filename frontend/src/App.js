@@ -526,9 +526,9 @@ export default function App() {
             )}
 
             <div className="panel p-3 text-xs text-muted-c flex flex-wrap gap-x-4 gap-y-1 items-center">
-              <span><span className="inline-block w-3 h-3 rounded shift-manha mr-1 align-middle"/> Manhã (&lt;08:30)</span>
-              <span><span className="inline-block w-3 h-3 rounded shift-intermedio mr-1 align-middle"/> Intermédio (08:30–09:30)</span>
-              <span><span className="inline-block w-3 h-3 rounded shift-tarde mr-1 align-middle"/> Tarde (≥09:30)</span>
+              <span><span className="inline-block w-3 h-3 rounded shift-manha mr-1 align-middle"/> Manhã (≤08:30)</span>
+              <span><span className="inline-block w-3 h-3 rounded shift-intermedio mr-1 align-middle"/> Intermédio (08:31–09:30)</span>
+              <span><span className="inline-block w-3 h-3 rounded shift-tarde mr-1 align-middle"/> Tarde (≥09:31)</span>
               <span><span className="inline-block w-3 h-3 rounded shift-folga mr-1 border border-c align-middle"/> Folga</span>
               <span><span className="inline-block w-3 h-3 rounded shift-ferias mr-1 align-middle"/> Férias</span>
               <span className="opacity-60">· Toca numa célula para mudar o código</span>
