@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import axios from "axios";
 import { MoreVertical, Upload, Calendar, Download, Sun, Moon, CircleDashed, ChevronLeft, ChevronRight, X, Clock, Users, Repeat, ListChecks, UserCheck, Plus } from "lucide-react";
 import "@/App.css";
 import MonthCalendar from "@/components/MonthCalendar";
@@ -8,9 +7,8 @@ import { DEFAULT_CODES, resolveCode, inferKind } from "@/lib/codes";
 import { Storage } from "@/lib/storage";
 import { buildIcs, downloadIcs } from "@/lib/ics";
 import { getHolidays, holidayFor } from "@/lib/holidays";
+import { parseSchedulePdf } from "@/lib/pdfParser";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
 const MONTH_NAMES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const TZ = "Atlantic/Azores";
 
@@ -397,9 +395,8 @@ export default function App() {
   async function handleFile(file) {
     setError(null); setUploading(true);
     try {
-      const fd = new FormData(); fd.append("file", file);
-      const res = await axios.post(`${API}/parse-schedule`, fd, { headers: {"Content-Type":"multipart/form-data"}, timeout: 60000 });
-      const data = res.data;
+      // 100% offline — PDF parsed in the browser, no backend required.
+      const data = await parseSchedulePdf(file);
       setSchedule(data);
       if (data.year) setYear(data.year);
       if (data.month) setMonth(data.month);
@@ -430,7 +427,7 @@ export default function App() {
         setNeedsMe(true);
       }
     } catch (e) {
-      setError(e.response?.data?.detail || e.message || "Erro a ler o PDF");
+      setError(e.message || "Erro a ler o PDF");
     } finally { setUploading(false); }
   }
 

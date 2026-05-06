@@ -111,6 +111,30 @@ user_problem_statement: |
      que guarda e altera os dados do horário e as cores.
 
 frontend:
+  - task: "Frontend-only PDF parser (offline / no backend)"
+    implemented: true
+    working: true
+    file: "frontend/src/lib/pdfParser.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "main"
+        -comment: "Ported backend pdfplumber-based parser to JavaScript using pdfjs-dist@4.8.69. Replicates the exact algorithm: word grouping into lines by y position, day-header detection (>=10 ints 1..31 mostly increasing), employee row regex /^(5\\d{7})\\s*[-–]\\s*(.+)$/, code-to-day assignment by nearest x center, month/year detection from filename + text. App.js no longer imports axios or REACT_APP_BACKEND_URL; handleFile calls parseSchedulePdf locally. Verified end-to-end with a synthetic jsPDF-generated schedule: 2 employees + 7 distinct codes parsed correctly, calendar rendered with correct colors, Quem és tu? modal appeared, no console errors. App is now fully self-contained on the frontend and can be deployed to Vercel/Netlify static hosting for free."
+
+  - task: "Default codes updated to user-provided list (17 codes)"
+    implemented: true
+    working: true
+    file: "frontend/src/lib/codes.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "main"
+        -comment: "Replaced DEFAULT_CODES with the exact 17 codes provided by user (M7, M13, M14, M37, M42, M50, 50A, M76, IT2, T6, 720, 796, D, DF, 704, F, 791) with correct entry/lunch/exit times and labels. Bumped storage key v3->v4 to force-reload defaults for existing users. D code kept as folga (no entry/exit) — the 12:00-23:59 range from the PDF legend is descriptive only."
+
   - task: "Day detail modal on calendar cell tap with floating + swap button"
     implemented: true
     working: true
