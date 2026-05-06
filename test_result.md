@@ -183,6 +183,30 @@ frontend:
         -agent: "main"
         -comment: "Codes drawer now keeps a local draft. Editing entry auto-updates kind (manha ≤08:30, intermedio 08:31-09:30, tarde ≥09:31) while preserving folga/ferias. Save commits to parent state (which persists via existing useEffect). Discard reverts. Closing with unsaved changes prompts confirmation. Code-pill background in each row reflects the current (draft) entry time for live color preview. Playwright verified: entry 07:30→10:00 on M7 flips kind to tarde, save enables/disables correctly, and the calendar M7 cells turn red after save."
 
+  - task: "Expand DEFAULT_CODES with full SP/SATA legend (45 codes)"
+    implemented: true
+    working: true
+    file: "frontend/src/lib/codes.js, frontend/src/lib/storage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "main"
+        -comment: "Compiled the legends from 5 PDFs (CARGA, OAE'S, SUPERVISÃO, PLACA, TTAE — May 2026) and merged them into a single deduplicated DEFAULT_CODES list of 45 entries. Includes morning shifts (M7,M8,M9,M13,M14,M15,M16,H002,M24,M25,M26,M28,M29,M29A,M29B), intermediate (M37,M40,M41,M42,M44,M45,M45A,M49,M50,50A), afternoon (M63,M76,M76A,IT2,T6,T7), part-time without lunch (P16,P24,P34,P36,P41), event codes (720,796), off codes (D,DF,FCD,MAT,704), and vacation (F,791). Storage key bumped v4→v5 to force-reload defaults. resolveCode/inferKind extended to recognise FCD/MAT as folga. Playwright confirmed all 45 codes visible in the Horários drawer."
+
+  - task: "Search bar inside CellEditModal (+ button code picker)"
+    implemented: true
+    working: true
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "main"
+        -comment: "Added an autoFocus search input at the top of CellEditModal with a magnifying-glass icon and an X clear button. Filters by code, label, entry hour OR exit hour (case-insensitive). Shows a friendly 'Sem resultados' state when no match. Counter at the bottom shows the number of matching codes. Search 'M14' returns just M14, '09:00' returns the 7 codes with that entry, 'xyz' returns the empty state. The list also now renders the label (e.g. 'SP M7') alongside the times for easier scanning."
+
 metadata:
   created_by: "main_agent"
   version: "1.1"
