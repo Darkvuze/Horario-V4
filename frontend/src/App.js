@@ -35,6 +35,7 @@ function ThemeSwitcher({ theme, setTheme }) {
 function MoreMenu({ open, onClose, onPick }) {
   if (!open) return null;
   const items = [
+    { id: "pdf", icon: Upload, label: "Carregar / Mudar PDF" },
     { id: "pessoas", icon: Users, label: "Pessoas" },
     { id: "horarios", icon: ListChecks, label: "Horários" },
     { id: "trocas", icon: Repeat, label: "Trocas" },
@@ -43,7 +44,7 @@ function MoreMenu({ open, onClose, onPick }) {
   return (
     <>
       <div className="fixed inset-0 z-30" onClick={onClose} data-testid="more-menu-overlay" />
-      <div className="absolute right-4 top-16 z-40 panel-solid rounded-xl shadow-2xl py-2 w-60 fz-rise" data-testid="more-menu" style={{ border: "1px solid var(--border)" }}>
+      <div className="absolute right-4 top-16 z-40 panel-solid rounded-xl shadow-2xl py-2 w-64 fz-rise" data-testid="more-menu" style={{ border: "1px solid var(--border)" }}>
         {items.map(({ id, icon: Icon, label }) => (
           <button key={id} data-testid={`more-${id}`} onClick={() => { onPick(id); onClose(); }}
             className="w-full text-left px-4 py-2.5 flex items-center gap-3 text-sm font-semibold text-main hover:bg-[color:var(--card)] transition-colors">
@@ -439,7 +440,10 @@ export default function App() {
             <ThemeSwitcher theme={theme} setTheme={setTheme}/>
             <button onClick={()=>setMenuOpen(o=>!o)} data-testid="open-menu-btn" className="p-2.5 rounded-xl btn-ghost"><MoreVertical size={20}/></button>
           </div>
-          <MoreMenu open={menuOpen} onClose={()=>setMenuOpen(false)} onPick={(id)=>setDrawer(id)}/>
+          <MoreMenu open={menuOpen} onClose={()=>setMenuOpen(false)} onPick={(id)=>{
+            if (id === "pdf") { fileInput.current?.click(); return; }
+            setDrawer(id);
+          }}/>
         </div>
       </header>
 
