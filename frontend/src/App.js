@@ -373,7 +373,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem("fazes:overrides", JSON.stringify(overrides)); }, [overrides]);
   useEffect(() => { if (schedule) { Storage.saveSchedule(schedule); if (schedule.year) setYear(schedule.year); if (schedule.month) setMonth(schedule.month); } }, [schedule]);
 
-  const employees = schedule?.employees || [];
+  const employees = useMemo(() => schedule?.employees || [], [schedule]);
   const overrideKey = `${year}-${month}-${selectedRow}`;
   const employeeWithOverrides = useMemo(() => {
     const emp = employees.find(e => e.row === selectedRow);
