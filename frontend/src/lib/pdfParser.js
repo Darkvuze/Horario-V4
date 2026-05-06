@@ -111,12 +111,175 @@ function matchEmployeeRow(rowText) {
   return null;
 }
 
+// --- Legend extraction ----------------------------------------------------
+// PDFs typically include a legend section explaining the codes. Examples:
+//   "M13 SP M13 08:00 16:30 Ref 12:00 13:00"
+//   "M7  SP M7  07:30 16:00 Ref 12:00 13:00"
+//   "T6  SP T6  13:00 21:30 Ref 18:00 19:00"
+//   "D   Horario de DE/Folga/FE  12:00-23:59"
+//   "F   Férias"
+//   "704 Casamento"
+//
+// We extract entry / exit / lunch times and a friendly label so they can be
+// merged into the user's code dictionary automatically.
+function normalizeTime(t) {
+  if (!t) return "";
+  const parts = t.split(":");
+  const h = parts[0].padStart(2, "0");
+  const m = (parts[1] || "00").padStart(2, "0");
+  return `${h}:${m}`;
+}
+
+const TIME_RE = "\\d{1,2}:\\d{2}";
+// Pattern A: CODE  <label>  HH:MM  HH:MM  Ref  HH:MM  HH:MM
+const LEGEND_FULL = new RegExp(
+  `^([A-Z0-9][A-Z0-9]{0,4})\\s+(.+?)\\s+(${TIME_RE})\\s+(${TIME_RE})\\s+Ref\\s+(${TIME_RE})\\s+(${TIME_RE})\\s*$`,
+  "i"
+);
+// Pattern B: CODE  <label>  HH:MM  HH:MM     (no lunch)
+const LEGEND_NO_LUNCH = new RegExp(
+  `^([A-Z0-9][A-Z0-9]{0,4})\\s+(.+?)\\s+(${TIME_RE})\\s+(${TIME_RE})\\s*$`,
+  "i"
+);
+// Pattern C: CODE <label> HH:MM-HH:MM   (single hyphen range)
+const LEGEND_RANGE = new RegExp(
+  `^([A-Z0-9][A-Z0-9]{0,4})\\s+(.+?)\\s+(${TIME_RE})\\s*[-–—]\\s*(${TIME_RE})\\s*$`,
+  "i"
+);
+// Pattern D: CODE <label>     (no times — folga / férias / event codes)
+const LEGEND_TEXT_ONLY = /^([A-Z0-9][A-Z0-9]{0,4})\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s./-]+)$/;
+
+const OFF_KEYWORDS = /\b(férias|ferias|folga|casamento|formação|formacao|deslocações|deslocacoes|deslocacao|deslocação|dispensa|feriado|baixa|atestado|maternidade|parental)\b/i;
+const FERIAS_KEYWORDS = /\b(férias|ferias)\b/i;
+
+function inferKindFromLabel(label, entry) {
+  if (FERIAS_KEYWORDS.test(label)) return "ferias";
+  if (OFF_KEYWORDS.test(label)) return "folga";
+  if (entry) {
+    const [h, m] = entry.split(":").map(Number);
+    if (!Number.isNaN(h)) {
+      const mins = h * 60 + (Number.isNaN(m) ? 0 : m);
+      if (mins <= 8 * 60 + 30) return "manha";
+      if (mins <= 9 * 60 + 30) return "intermedio";
+      return "tarde";
+    }
+  }
+  return null;
+}
+
+function parseLegendLine(text) {
+  const t = text.trim();
+  if (!t) return null;
+  // Skip lines that look like employee rows or day numbers only.
+  if (/^\d{4,10}\s*[-–—]/.test(t)) return null;
+  if (/^\d{1,2}(\s+\d{1,2}){5,}/.test(t)) return null; // day header
+
+  let m = t.match(LEGEND_FULL);
+  if (m) {
+    const [, code, label, entry, exit, lunchStart, lunchEnd] = m;
+    return {
+      code: code.toUpperCase(),
+      label: label.trim(),
+      entry: normalizeTime(entry),
+      exit: normalizeTime(exit),
+      lunchStart: normalizeTime(lunchStart),
+      lunchEnd: normalizeTime(lunchEnd),
+      kind: inferKindFromLabel(label, entry) || "manha",
+    };
+  }
+  m = t.match(LEGEND_NO_LUNCH);
+  if (m) {
+    const [, code, label, entry, exit] = m;
+    return {
+      code: code.toUpperCase(),
+      label: label.trim(),
+      entry: normalizeTime(entry),
+      exit: normalizeTime(exit),
+      lunchStart: "",
+      lunchEnd: "",
+      kind: inferKindFromLabel(label, entry) || "manha",
+    };
+  }
+  m = t.match(LEGEND_RANGE);
+  if (m) {
+    const [, code, label, entry, exit] = m;
+    const kind = inferKindFromLabel(label, entry);
+    return {
+      code: code.toUpperCase(),
+      label: label.trim(),
+      // For range-style folga codes, don't store hours (they pollute the ICS).
+      entry: kind === "folga" || kind === "ferias" ? "" : normalizeTime(entry),
+      exit: kind === "folga" || kind === "ferias" ? "" : normalizeTime(exit),
+      lunchStart: "",
+      lunchEnd: "",
+      kind: kind || "manha",
+    };
+  }
+  m = t.match(LEGEND_TEXT_ONLY);
+  if (m && OFF_KEYWORDS.test(t)) {
+    const [, code, label] = m;
+    return {
+      code: code.toUpperCase(),
+      label: label.trim(),
+      entry: "",
+      exit: "",
+      lunchStart: "",
+      lunchEnd: "",
+      kind: inferKindFromLabel(label, "") || "folga",
+    };
+  }
+  return null;
+}
+
+// Some PDFs glue two legend entries on the same physical line, e.g.:
+// "IT2 SP T2 12:00 20:30 Ref 14:00 15:00 M13 SP M13 08:00 16:30 Ref 12:00 13:00"
+// We split such glued lines on a heuristic boundary: the appearance of a
+// new ALL-CAPS short code right after a time token.
+function splitGluedLegendLines(line) {
+  const t = line.trim();
+  if (!t) return [];
+  // Find boundaries: a HH:MM followed by spaces and a NEW code-like token.
+  const parts = [];
+  const splitRe = /(\d{1,2}:\d{2})\s+(?=[A-Z0-9]{1,5}\s)/g;
+  let lastIdx = 0;
+  let match;
+  const indices = [];
+  while ((match = splitRe.exec(t)) !== null) {
+    indices.push(match.index + match[1].length);
+  }
+  if (indices.length === 0) return [t];
+  for (const idx of indices) {
+    parts.push(t.slice(lastIdx, idx).trim());
+    lastIdx = idx;
+  }
+  parts.push(t.slice(lastIdx).trim());
+  // Only return splits that look like multiple legend entries.
+  const valid = parts.filter((p) => /^[A-Z0-9]{1,5}\s/.test(p));
+  return valid.length >= 2 ? valid : [t];
+}
+
+function extractLegend(allLines) {
+  const legend = {};
+  for (const ln of allLines) {
+    const text = ln.words.map((w) => w.text).join(" ").trim();
+    const candidates = splitGluedLegendLines(text);
+    for (const cand of candidates) {
+      const entry = parseLegendLine(cand);
+      if (entry && !legend[entry.code]) {
+        legend[entry.code] = entry;
+      }
+    }
+  }
+  return legend;
+}
+
 export async function parseSchedulePdf(file) {
   const buf = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
 
   const employees = [];
   const rawCodesSet = new Set();
+  const allLines = []; // collected across all pages for legend extraction
   const title = file.name || "";
   let fullText = "";
 
@@ -134,6 +297,7 @@ export async function parseSchedulePdf(file) {
     if (words.length === 0) continue;
 
     const lines = groupWordsIntoLines(words, 4.0);
+    allLines.push(...lines);
 
     // Find the day-number header line: a line with many small integers 1..31
     // that are mostly increasing.
@@ -270,11 +434,13 @@ export async function parseSchedulePdf(file) {
   }
 
   const { month, year } = detectMonthYear(fullText, title);
+  const legend = extractLegend(allLines);
   return {
     month,
     year,
     title,
     employees,
     raw_codes: Array.from(rawCodesSet).sort(),
+    legend, // map: { CODE: { code, label, entry, exit, lunchStart, lunchEnd, kind } }
   };
 }

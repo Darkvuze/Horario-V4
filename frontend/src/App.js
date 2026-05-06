@@ -401,21 +401,58 @@ export default function App() {
       if (data.year) setYear(data.year);
       if (data.month) setMonth(data.month);
       if (Array.isArray(data.raw_codes)) {
+        const legend = data.legend || {};
         setCodes(prev => {
+          // First pass: enrich existing codes if the user hasn't customised them
+          // and the PDF legend has more accurate info.
           const corrected = prev.map(c => {
-            if (c.entry) return c;
             const u = (c.code||"").toUpperCase();
+            const fromLegend = legend[u];
+            if (fromLegend) {
+              // Merge: keep user-edited times if present, otherwise fill from legend.
+              return {
+                ...c,
+                entry: c.entry || fromLegend.entry || "",
+                exit: c.exit || fromLegend.exit || "",
+                lunchStart: c.lunchStart || fromLegend.lunchStart || "",
+                lunchEnd: c.lunchEnd || fromLegend.lunchEnd || "",
+                label: c.label || fromLegend.label || "",
+                // Only override kind if user kept the default heuristic and the
+                // legend gives a clearer answer.
+                kind: c.entry ? c.kind : (fromLegend.kind || c.kind),
+              };
+            }
+            // No legend info — keep heuristic clean-up from before.
+            if (c.entry) return c;
             if (/^F$|^FER/.test(u)) return { ...c, kind: "ferias" };
             if (/^(D|DF)$/.test(u)) return { ...c, kind: "folga" };
             if (/^M/.test(u) && c.kind !== "manha" && c.kind !== "intermedio") return { ...c, kind: "manha" };
             if (!/^M/.test(u) && c.kind !== "tarde" && c.kind !== "folga" && c.kind !== "ferias") return { ...c, kind: "tarde" };
             return c;
           });
+          // Second pass: add codes from the PDF that weren't in the user's list.
           const existing = new Set(corrected.map(c => c.code.toUpperCase()));
-          const adds = data.raw_codes.filter(rc => !existing.has(rc.toUpperCase())).map(rc => ({
-            code: rc.toUpperCase(), entry:"", lunchStart:"", lunchEnd:"", exit:"",
-            kind: /^F$|^FER/i.test(rc) ? "ferias" : /^(D|DF)$/i.test(rc) ? "folga" : /^M/i.test(rc) ? "manha" : "tarde",
-          }));
+          const adds = data.raw_codes
+            .filter(rc => !existing.has(rc.toUpperCase()))
+            .map(rc => {
+              const u = rc.toUpperCase();
+              const fromLegend = legend[u];
+              if (fromLegend) {
+                return {
+                  code: u,
+                  entry: fromLegend.entry || "",
+                  lunchStart: fromLegend.lunchStart || "",
+                  lunchEnd: fromLegend.lunchEnd || "",
+                  exit: fromLegend.exit || "",
+                  label: fromLegend.label || "",
+                  kind: fromLegend.kind || "manha",
+                };
+              }
+              return {
+                code: u, entry: "", lunchStart: "", lunchEnd: "", exit: "",
+                kind: /^F$|^FER/i.test(rc) ? "ferias" : /^(D|DF)$/i.test(rc) ? "folga" : /^M/i.test(rc) ? "manha" : "tarde",
+              };
+            });
           return adds.length ? [...corrected, ...adds] : corrected;
         });
       }

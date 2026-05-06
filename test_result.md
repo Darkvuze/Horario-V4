@@ -111,6 +111,18 @@ user_problem_statement: |
      que guarda e altera os dados do horário e as cores.
 
 frontend:
+  - task: "Auto-extract schedule times from PDF legend"
+    implemented: true
+    working: true
+    file: "frontend/src/lib/pdfParser.js, frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "main"
+        -comment: "PDF parser now also extracts the legend section (e.g. 'M13 SP M13 08:00 16:30 Ref 12:00 13:00') and returns a `legend` map of code -> {entry, exit, lunchStart, lunchEnd, label, kind}. Supports 4 patterns: (A) full with Ref lunch, (B) entry+exit no lunch, (C) HH:MM-HH:MM range, (D) text-only off codes. Glued legend lines are auto-split. App.js merges legend data into the codes store: existing user-edited entries are preserved, codes never edited get filled from the legend, and brand-new codes from the PDF are added with full hours/label/kind. Verified e2e: 3 unseen codes (X1, X2, NV1) extracted from legend with correct entry/exit/lunch/kind. User no longer has to type hours by hand."
+
   - task: "Generic employee parser (any workplace, any ID format)"
     implemented: true
     working: true
