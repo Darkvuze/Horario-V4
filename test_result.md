@@ -189,6 +189,42 @@ metadata:
   test_sequence: 0
   run_ui: false
 
+  - task: "All 45 new codes loaded and accessible"
+    implemented: true
+    working: true
+    file: "frontend/src/lib/codes.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "Validated all 45 codes (M7, M8, M9, M13, M14, M15, M16, H002, M24, M25, M26, M28, M29, M29A, M29B, M37, M40, M41, M42, M44, M45, M45A, M49, M50, 50A, M63, M76, M76A, IT2, T6, T7, P16, P24, P34, P36, P41, 720, 796, D, DF, FCD, MAT, 704, F, 791) are present in the Horários drawer. All codes found with correct entry/exit times, lunch breaks, and kind classification."
+
+  - task: "Search functionality in CellEditModal"
+    implemented: true
+    working: true
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "Search input filters codes by code name, label, entry time, and exit time. Tested: (1) Search 'M14' shows only M14, (2) Search '09:00' shows all 7 codes with 09:00 entry (M37, M40, M41, M42, M44, M45, M45A) and hides M7 (07:30), (3) Search 'xyz123' shows empty state 'Sem resultados', (4) Clear button restores full list. All search scenarios working correctly."
+
+  - task: "Code swapping via day detail modal"
+    implemented: true
+    working: true
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "Day detail modal opens on calendar cell tap, shows current shift details (code, label, entry/exit, lunch). Floating + button opens CellEditModal for code selection. Tested swapping day 1 from M7 to M50 - modal closed correctly and day 1 now displays M50 with correct times (09:30-18:30, lunch 13:30-15:00). Override system working correctly."
+
 test_plan:
   current_focus: []
   stuck_tasks: []
@@ -198,3 +234,5 @@ test_plan:
 agent_communication:
     -agent: "main"
     -message: "Implemented both user requests. Verified manually via Playwright with seeded localStorage (schedule + me). No backend changes. Waiting for user to approve / request further tweaks."
+    -agent: "testing"
+    -message: "Comprehensive testing completed. All 45 codes validated in Horários drawer. Search functionality working perfectly - filters by code name, label, and time. Day detail modal and code swapping tested successfully. Empty state for no results working. All requested features are fully functional with no critical issues found."

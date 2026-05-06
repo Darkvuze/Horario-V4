@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { MoreVertical, Upload, Calendar, Download, Sun, Moon, CircleDashed, ChevronLeft, ChevronRight, X, Clock, Users, Repeat, ListChecks, UserCheck, Plus } from "lucide-react";
+import { MoreVertical, Upload, Calendar, Download, Sun, Moon, CircleDashed, ChevronLeft, ChevronRight, X, Clock, Users, Repeat, ListChecks, UserCheck, Plus, Search } from "lucide-react";
 import "@/App.css";
 import MonthCalendar from "@/components/MonthCalendar";
 import CodesDrawer from "@/components/CodesDrawer";
@@ -286,8 +286,17 @@ function DayDetailModal({ cell, codes, employee, year, month, onClose, onChangeR
 }
 
 function CellEditModal({ cell, codes, onClose, onSave }) {
+  const [q, setQ] = useState("");
   if (!cell) return null;
   const sorted = [...codes].sort((a,b) => a.code.localeCompare(b.code));
+  const query = q.trim().toLowerCase();
+  const filtered = !query ? sorted : sorted.filter(c => {
+    const code = (c.code || "").toLowerCase();
+    const label = (c.label || "").toLowerCase();
+    const entry = (c.entry || "").toLowerCase();
+    const exit = (c.exit || "").toLowerCase();
+    return code.includes(query) || label.includes(query) || entry.includes(query) || exit.includes(query);
+  });
   return (
     <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose} data-testid="cell-edit-modal">
       <div className="panel-solid rounded-2xl max-w-lg w-full p-5 fz-rise" style={{ border: "1px solid var(--border)" }} onClick={e=>e.stopPropagation()}>
@@ -296,19 +305,50 @@ function CellEditModal({ cell, codes, onClose, onSave }) {
           <button onClick={onClose} className="btn-ghost rounded p-1.5"><X size={18}/></button>
         </div>
         <p className="text-soft text-xs mb-3">Atual: <span className="font-mono font-bold">{cell.current || "—"}</span> · Escolhe o novo código:</p>
-        <div className="max-h-[60vh] overflow-y-auto fz-scroll grid grid-cols-1 gap-1">
-          <button onClick={()=>onSave("")} data-testid="cell-set-empty" className="btn-ghost rounded-lg px-3 py-2 text-left text-sm">— Limpar —</button>
-          {sorted.map(c => {
+        <div className="relative mb-3">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-soft pointer-events-none"/>
+          <input
+            value={q}
+            onChange={e=>setQ(e.target.value)}
+            placeholder="Procurar código ou hora (ex: M14, 09:00, T6)..."
+            data-testid="cell-edit-search"
+            autoFocus
+            className="w-full input-c rounded-lg pl-9 pr-9 py-2 text-sm"
+          />
+          {q && (
+            <button
+              onClick={()=>setQ("")}
+              data-testid="cell-edit-search-clear"
+              className="absolute right-2 top-1/2 -translate-y-1/2 btn-ghost rounded p-1"
+              aria-label="Limpar pesquisa"
+            >
+              <X size={14}/>
+            </button>
+          )}
+        </div>
+        <div className="max-h-[55vh] overflow-y-auto fz-scroll grid grid-cols-1 gap-1" data-testid="cell-edit-list">
+          {!query && (
+            <button onClick={()=>onSave("")} data-testid="cell-set-empty" className="btn-ghost rounded-lg px-3 py-2 text-left text-sm">— Limpar —</button>
+          )}
+          {filtered.length === 0 ? (
+            <div className="panel p-6 text-center text-soft text-xs rounded-lg" data-testid="cell-edit-empty">
+              Sem resultados para "{q}".
+            </div>
+          ) : filtered.map(c => {
             const k = inferKind(c);
             return (
               <button key={c.code} onClick={()=>onSave(c.code)} data-testid={`cell-set-${c.code}`} className="rounded-lg px-3 py-2 flex items-center gap-3 hover:opacity-90 transition-opacity" style={{background:"var(--card)"}}>
                 <span className={`shift-${k === 'vazio' ? 'folga' : k} font-mono text-sm font-extrabold rounded px-2 py-1 min-w-[56px] text-center`}>{c.code}</span>
-                <span className="flex-1 text-left text-xs text-muted-c font-mono">
+                <span className="flex-1 text-left text-xs text-muted-c font-mono truncate">
+                  {c.label && <span className="font-semibold mr-2">{c.label}</span>}
                   {c.entry || "—"} → {c.exit || "—"} {c.lunchStart && `(almoço ${c.lunchStart}-${c.lunchEnd})`}
                 </span>
               </button>
             );
           })}
+        </div>
+        <div className="text-[10px] text-soft text-center mt-2">
+          {filtered.length} {filtered.length === 1 ? "código" : "códigos"}
         </div>
       </div>
     </div>
