@@ -101,3 +101,52 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: |
+  Melhorias no calendário e editor de horários:
+  1. Ao tocar num dia no calendário, mostrar apenas o horário do utilizador e um
+     botão "+" no canto inferior direito para trocar/mudar o horário desse dia.
+  2. As cores associadas às horas de entrada devem atualizar automaticamente ao
+     alterar a hora de entrada; o editor de horários deve ter um botão "Guardar"
+     que guarda e altera os dados do horário e as cores.
+
+frontend:
+  - task: "Day detail modal on calendar cell tap with floating + swap button"
+    implemented: true
+    working: true
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "main"
+        -comment: "Added DayDetailModal that shows only the current user's shift (code, label, entry/exit, lunch) when a calendar cell is tapped. A floating + button in the bottom-right opens the existing CellEditModal to swap the code. Verified via Playwright that tapping day-cell-5 opens the detail modal and the + triggers the code picker."
+
+  - task: "CodesDrawer: auto-infer kind from entry + Save/Discard button"
+    implemented: true
+    working: true
+    file: "frontend/src/components/CodesDrawer.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "main"
+        -comment: "Codes drawer now keeps a local draft. Editing entry auto-updates kind (manha ≤08:30, intermedio 08:31-09:30, tarde ≥09:31) while preserving folga/ferias. Save commits to parent state (which persists via existing useEffect). Discard reverts. Closing with unsaved changes prompts confirmation. Code-pill background in each row reflects the current (draft) entry time for live color preview. Playwright verified: entry 07:30→10:00 on M7 flips kind to tarde, save enables/disables correctly, and the calendar M7 cells turn red after save."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.1"
+  test_sequence: 0
+  run_ui: false
+
+test_plan:
+  current_focus: []
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+    -agent: "main"
+    -message: "Implemented both user requests. Verified manually via Playwright with seeded localStorage (schedule + me). No backend changes. Waiting for user to approve / request further tweaks."

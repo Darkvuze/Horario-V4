@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
-import { MoreVertical, Upload, Calendar, Download, Sun, Moon, CircleDashed, ChevronLeft, ChevronRight, X, Clock, Users, Repeat, ListChecks, UserCheck } from "lucide-react";
+import { MoreVertical, Upload, Calendar, Download, Sun, Moon, CircleDashed, ChevronLeft, ChevronRight, X, Clock, Users, Repeat, ListChecks, UserCheck, Plus } from "lucide-react";
 import "@/App.css";
 import MonthCalendar from "@/components/MonthCalendar";
 import CodesDrawer from "@/components/CodesDrawer";
@@ -221,6 +221,72 @@ function MeModal({ employees, onPick, onSkip }) {
   );
 }
 
+function DayDetailModal({ cell, codes, employee, year, month, onClose, onChangeRequest }) {
+  if (!cell) return null;
+  const cfg = cell.current ? resolveCode(cell.current, codes) : null;
+  const kind = inferKind(cfg);
+  const date = new Date(year, month - 1, cell.day);
+  const weekdays = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+  const weekday = weekdays[date.getDay()];
+  const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose} data-testid="day-detail-modal">
+      <div className="panel-solid rounded-2xl max-w-sm w-full p-5 fz-rise relative overflow-visible" onClick={e=>e.stopPropagation()} style={{border:"1px solid var(--border)"}}>
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <div className="text-xs text-soft uppercase tracking-wider capitalize">{weekday}</div>
+            <h3 className="text-2xl font-extrabold text-main leading-tight">Dia {cell.day} · {months[month-1]}</h3>
+            {employee && (
+              <div className="text-[11px] text-soft mt-1 truncate">{employee.name}</div>
+            )}
+          </div>
+          <button onClick={onClose} className="btn-ghost rounded-lg p-1.5" data-testid="day-detail-close"><X size={18}/></button>
+        </div>
+
+        <div className="text-[11px] text-soft uppercase tracking-wider mb-2 font-semibold">O teu horário</div>
+
+        {cell.current ? (
+          <div className={`shift-${kind === 'vazio' ? 'folga' : kind} rounded-xl p-5 text-center`} data-testid="day-detail-shift">
+            <div className="font-mono text-4xl font-extrabold tracking-tight">{cell.current}</div>
+            {cfg?.label && <div className="text-sm font-semibold opacity-80 mt-1">{cfg.label}</div>}
+            {(cfg?.entry || cfg?.exit) ? (
+              <div className="mt-3 space-y-1">
+                <div className="font-mono text-lg font-bold">
+                  {cfg.entry || "—"} <span className="opacity-60">→</span> {cfg.exit || "—"}
+                </div>
+                {cfg?.lunchStart && cfg?.lunchEnd && (
+                  <div className="text-xs font-mono opacity-80">Almoço: {cfg.lunchStart} – {cfg.lunchEnd}</div>
+                )}
+              </div>
+            ) : (
+              <div className="mt-3 text-xs font-semibold opacity-80">
+                {kind === "folga" ? "Dia de folga" : kind === "ferias" ? "Dia de férias" : "Sem horas definidas"}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="panel p-6 text-center text-soft rounded-xl" data-testid="day-detail-empty">
+            <div className="text-sm">Sem código atribuído a este dia.</div>
+          </div>
+        )}
+
+        {/* Floating + button bottom-right to swap/change the shift */}
+        <button
+          onClick={onChangeRequest}
+          data-testid="day-detail-swap-btn"
+          aria-label="Trocar horário"
+          title="Trocar horário"
+          className="absolute -bottom-5 -right-5 w-14 h-14 rounded-full btn-accent shadow-2xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+          style={{ boxShadow: "0 10px 25px -5px rgba(0,0,0,0.5), 0 0 0 4px var(--panel-solid)" }}
+        >
+          <Plus size={26} strokeWidth={2.75}/>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function CellEditModal({ cell, codes, onClose, onSave }) {
   if (!cell) return null;
   const sorted = [...codes].sort((a,b) => a.code.localeCompare(b.code));
@@ -286,6 +352,7 @@ export default function App() {
   const [drawer, setDrawer] = useState(null); // pessoas|horarios|trocas|relogio
   const [needsMe, setNeedsMe] = useState(false);
   const [editCell, setEditCell] = useState(null);
+  const [pickCodeCell, setPickCodeCell] = useState(null);
   const fileInput = useRef(null);
 
   // Theme application + dynamic browser status bar color
@@ -394,6 +461,7 @@ export default function App() {
       if (Object.keys(ov).length === 0) delete next[k]; else next[k] = ov;
       return next;
     });
+    setPickCodeCell(null);
     setEditCell(null);
   }
 
@@ -531,7 +599,7 @@ export default function App() {
               <span><span className="inline-block w-3 h-3 rounded shift-tarde mr-1 align-middle"/> Tarde (≥09:31)</span>
               <span><span className="inline-block w-3 h-3 rounded shift-folga mr-1 border border-c align-middle"/> Folga</span>
               <span><span className="inline-block w-3 h-3 rounded shift-ferias mr-1 align-middle"/> Férias</span>
-              <span className="opacity-60">· Toca numa célula para mudar o código</span>
+              <span className="opacity-60">· Toca num dia para ver o teu horário · + para trocar</span>
             </div>
           </div>
         )}
@@ -547,7 +615,25 @@ export default function App() {
         <MeModal employees={employees} onPick={(row)=>{setMe(row); setSelectedRow(row); setNeedsMe(false);}} onSkip={()=>setNeedsMe(false)}/>
       )}
 
-      {editCell && <CellEditModal cell={editCell} codes={codes} onClose={()=>setEditCell(null)} onSave={(code)=>setCellCode(editCell.day, code)}/>}
+      {editCell && (
+        <DayDetailModal
+          cell={editCell}
+          codes={codes}
+          employee={employeeWithOverrides}
+          year={year}
+          month={month}
+          onClose={()=>setEditCell(null)}
+          onChangeRequest={()=>{ setPickCodeCell(editCell); setEditCell(null); }}
+        />
+      )}
+      {pickCodeCell && (
+        <CellEditModal
+          cell={pickCodeCell}
+          codes={codes}
+          onClose={()=>setPickCodeCell(null)}
+          onSave={(code)=>setCellCode(pickCodeCell.day, code)}
+        />
+      )}
     </div>
   );
 }
