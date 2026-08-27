@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { MoreVertical, Upload, Calendar, Download, Sun, Moon, CircleDashed, ChevronLeft, ChevronRight, X, Clock, Users, Repeat, ListChecks, UserCheck, Plus, Search } from "lucide-react";
+import { MoreVertical, Upload, Calendar, Download, Sun, Moon, CircleDashed, ChevronLeft, ChevronRight, X, Clock, Users, Repeat, ListChecks, UserCheck, Plus, Search, History, Trash2, WifiOff } from "lucide-react";
 import "@/App.css";
 import MonthCalendar from "@/components/MonthCalendar";
 import CodesDrawer from "@/components/CodesDrawer";
@@ -34,6 +34,7 @@ function MoreMenu({ open, onClose, onPick }) {
   if (!open) return null;
   const items = [
     { id: "pdf", icon: Upload, label: "Carregar / Mudar PDF" },
+    { id: "historico", icon: History, label: "Histórico de Escalas" },
     { id: "pessoas", icon: Users, label: "Pessoas" },
     { id: "horarios", icon: ListChecks, label: "Horários" },
     { id: "trocas", icon: Repeat, label: "Trocas" },
@@ -189,6 +190,45 @@ function ClockDrawer({ open, onClose }) {
             <b>iPhone:</b> abrir o ficheiro .ics → "Adicionar Tudo". <br/>
             <b>Android:</b> abrir com Google Calendar → confirmar.
           </p>
+        </div>
+      </div>
+    </Drawer>
+  );
+}
+
+function HistoryDrawer({ open, onClose, history, currentKey, onLoad, onDelete, onUpload }) {
+  return (
+    <Drawer open={open} onClose={onClose} title="Histórico de Escalas" testid="history-drawer">
+      <div className="space-y-3">
+        <button onClick={onUpload} data-testid="history-upload" className="w-full btn-ghost rounded-lg px-3 py-2 text-sm flex items-center justify-center gap-2">
+          <Upload size={14}/> Carregar novo PDF
+        </button>
+        <p className="text-xs text-soft px-1">
+          Cada PDF carregado fica guardado no telemóvel. Toca numa escala para a abrir — funciona offline.
+        </p>
+        {history.length === 0 && (
+          <div className="panel p-6 text-center text-soft text-sm rounded-lg" data-testid="history-empty">Ainda não há escalas guardadas.</div>
+        )}
+        <div className="space-y-1.5">
+          {history.map(h => {
+            const active = h.key === currentKey;
+            return (
+              <div key={h.key} className={`flex items-center gap-2 rounded-xl p-3 ${active ? "btn-accent" : "panel"}`} data-testid={`history-item-${h.key}`}>
+                <button onClick={()=>{ onLoad(h); onClose(); }} data-testid={`history-load-${h.key}`} className="flex-1 text-left min-w-0">
+                  <div className="font-extrabold text-sm leading-tight">
+                    {h.month ? MONTH_NAMES[h.month-1] : "?"} {h.year || ""}
+                  </div>
+                  <div className={`text-[11px] truncate ${active ? "opacity-80" : "text-soft"}`}>
+                    {h.title || "Sem título"} · {h.count} pessoa{h.count === 1 ? "" : "s"}
+                  </div>
+                </button>
+                {active && <span className="text-[9px] uppercase font-bold rounded-full px-2 py-0.5" style={{background:"color-mix(in srgb, var(--accent-fg) 20%, transparent)"}}>Atual</span>}
+                <button onClick={()=>onDelete(h.key)} data-testid={`history-del-${h.key}`} title="Apagar" className="p-2 rounded-lg btn-ghost">
+                  <Trash2 size={14}/>
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
     </Drawer>
@@ -391,7 +431,17 @@ export default function App() {
   const [needsMe, setNeedsMe] = useState(false);
   const [editCell, setEditCell] = useState(null);
   const [pickCodeCell, setPickCodeCell] = useState(null);
+  const [history, setHistory] = useState(() => Storage.loadHistory());
+  const [online, setOnline] = useState(() => navigator.onLine);
   const fileInput = useRef(null);
+
+  useEffect(() => {
+    const up = () => setOnline(true);
+    const down = () => setOnline(false);
+    window.addEventListener("online", up);
+    window.addEventListener("offline", down);
+    return () => { window.removeEventListener("online", up); window.removeEventListener("offline", down); };
+  }, []);
 
   // Theme application + dynamic browser status bar color
   useEffect(() => {
@@ -412,6 +462,58 @@ export default function App() {
   useEffect(() => { localStorage.setItem("fazes:me", JSON.stringify(me)); }, [me]);
   useEffect(() => { localStorage.setItem("fazes:overrides", JSON.stringify(overrides)); }, [overrides]);
   useEffect(() => { if (schedule) { Storage.saveSchedule(schedule); if (schedule.year) setYear(schedule.year); if (schedule.month) setMonth(schedule.month); } }, [schedule]);
+  useEffect(() => { Storage.saveHistory(history); }, [history]);
+
+  const scheduleKeyOf = (s) => s ? `${s.year || "?"}-${s.month || "?"}-${(s.title || "").trim()}` : null;
+  const currentKey = scheduleKeyOf(schedule);
+
+  function addToHistory(sched) {
+    if (!sched?.employees?.length) return;
+    const key = scheduleKeyOf(sched);
+    setHistory(prev => {
+      const entry = {
+        key,
+        title: sched.title || "",
+        month: sched.month || null,
+        year: sched.year || null,
+        count: sched.employees.length,
+        savedAt: new Date().toISOString(),
+        schedule: sched,
+      };
+      return [entry, ...prev.filter(h => h.key !== key)].slice(0, 24);
+    });
+  }
+
+  // Seed history with the schedule that was already stored before this feature.
+  useEffect(() => {
+    if (schedule?.employees?.length && !Storage.loadHistory().some(h => h.key === scheduleKeyOf(schedule))) {
+      addToHistory(schedule);
+    }
+  }, []); // eslint-disable-line
+
+  function loadFromHistory(entry) {
+    const sched = entry.schedule;
+    const meId = (schedule?.employees || []).find(e => e.row === me)?.employee_id;
+    setSchedule(sched);
+    if (sched.year) setYear(sched.year);
+    if (sched.month) setMonth(sched.month);
+    const match = meId && sched.employees.find(e => e.employee_id === meId);
+    if (match) { setMe(match.row); setSelectedRow(match.row); }
+    else if (me && sched.employees.some(e => e.row === me)) setSelectedRow(me);
+    else setSelectedRow(sched.employees?.[0]?.row || null);
+  }
+
+  function deleteFromHistory(key) {
+    setHistory(prev => prev.filter(h => h.key !== key));
+  }
+
+  function goToMonth(y, m) {
+    if (!(schedule && schedule.year === y && schedule.month === m)) {
+      const entry = history.find(h => h.year === y && h.month === m);
+      if (entry && entry.key !== currentKey) { loadFromHistory(entry); return; }
+    }
+    setYear(y); setMonth(m);
+  }
 
   const employees = useMemo(() => schedule?.employees || [], [schedule]);
   const overrideKey = `${year}-${month}-${selectedRow}`;
@@ -477,14 +579,25 @@ export default function App() {
       } catch (err) {
         if (err instanceof NoTextLayerError) {
           // PDF sem texto (imagem/scan) — usar OCR via backend (Gemini vision).
+          if (!navigator.onLine) {
+            throw new Error("Este PDF está em modo imagem e o OCR precisa de internet. Liga-te à internet e tenta de novo — depois fica guardado no Histórico e funciona offline.");
+          }
           setError("PDF em modo imagem — a extrair via OCR no servidor…");
-          data = await parseWithBackend(file);
+          try {
+            data = await parseWithBackend(file);
+          } catch (netErr) {
+            if (netErr instanceof TypeError || /fetch|network/i.test(netErr.message || "")) {
+              throw new Error("Sem ligação ao servidor. Este PDF em modo imagem precisa de internet para o OCR. Tenta novamente com ligação.");
+            }
+            throw netErr;
+          }
           setError(null);
         } else {
           throw err;
         }
       }
       setSchedule(data);
+      addToHistory(data);
       if (data.year) setYear(data.year);
       if (data.month) setMonth(data.month);
       if (Array.isArray(data.raw_codes)) {
@@ -630,6 +743,11 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {!online && (
+              <span data-testid="offline-badge" title="Sem internet — a usar dados guardados" className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide bg-amber-500/20 text-amber-500">
+                <WifiOff size={12}/> Offline
+              </span>
+            )}
             <ThemeSwitcher theme={theme} setTheme={setTheme}/>
             <button onClick={()=>setMenuOpen(o=>!o)} data-testid="open-menu-btn" className="p-2.5 rounded-xl btn-ghost"><MoreVertical size={20}/></button>
           </div>
@@ -648,12 +766,12 @@ export default function App() {
           <div className="space-y-4 fz-rise">
             <div className="panel p-3 sm:p-4 flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-1">
-                <button onClick={()=>{ if(month===1){setMonth(12);setYear(year-1);} else setMonth(month-1); }} data-testid="prev-month-btn" className="btn-ghost rounded-lg p-2"><ChevronLeft size={16}/></button>
+                <button onClick={()=>{ if(month===1){goToMonth(year-1,12);} else goToMonth(year,month-1); }} data-testid="prev-month-btn" className="btn-ghost rounded-lg p-2"><ChevronLeft size={16}/></button>
                 <div className="px-3 min-w-[140px] text-center">
                   <div className="font-extrabold text-main text-lg leading-tight">{MONTH_NAMES[month-1]}</div>
                   <div className="text-xs text-soft">{year}</div>
                 </div>
-                <button onClick={()=>{ if(month===12){setMonth(1);setYear(year+1);} else setMonth(month+1); }} data-testid="next-month-btn" className="btn-ghost rounded-lg p-2"><ChevronRight size={16}/></button>
+                <button onClick={()=>{ if(month===12){goToMonth(year+1,1);} else goToMonth(year,month+1); }} data-testid="next-month-btn" className="btn-ghost rounded-lg p-2"><ChevronRight size={16}/></button>
               </div>
               <div className="flex-1 min-w-[160px]">
                 {employeeWithOverrides && (
@@ -672,7 +790,13 @@ export default function App() {
             </div>
             {error && <div className="panel p-3 text-sm text-rose-400" data-testid="main-error">{error}</div>}
 
-            {employeeWithOverrides && codeSummary.length > 0 && (
+            {schedule && schedule.month && (schedule.month !== month || schedule.year !== year) && (
+              <div className="panel p-3 text-xs text-amber-500" data-testid="month-mismatch-warning">
+                Não tens escala guardada para {MONTH_NAMES[month-1]} {year} — os códigos mostrados são de {MONTH_NAMES[schedule.month-1]} {schedule.year}. Carrega o PDF desse mês ou vê o Histórico no menu.
+              </div>
+            )}
+
+            {employeeWithOverrides && codeSummary.length > 0 && !(schedule?.month && (schedule.month !== month || schedule.year !== year)) && (
               <div className="panel p-3 sm:p-4" data-testid="code-summary">
                 <div className="text-xs font-bold uppercase tracking-wider text-soft mb-2">
                   Resumo de {MONTH_NAMES[month-1]} · {employeeWithOverrides.days.filter(d=>d.code).length} dias com código
@@ -694,8 +818,10 @@ export default function App() {
             )}
 
             {employeeWithOverrides ? (
-              <MonthCalendar year={year} month={month} employee={employeeWithOverrides} codes={codes} region={region}
-                onCellClick={(day, code) => setEditCell({ day, current: code })}/>
+              <div style={schedule?.month && (schedule.month !== month || schedule.year !== year) ? { opacity: 0.35, filter: "grayscale(0.7)" } : undefined} data-testid="calendar-wrap">
+                <MonthCalendar year={year} month={month} employee={employeeWithOverrides} codes={codes} region={region}
+                  onCellClick={(day, code) => setEditCell({ day, current: code })}/>
+              </div>
             ) : (
               <div className="panel p-8 text-center text-soft">Escolhe quem és no menu (3 pontinhos).</div>
             )}
@@ -732,6 +858,7 @@ export default function App() {
 
       {/* Drawers */}
       <PeopleDrawer open={drawer==="pessoas"} onClose={()=>setDrawer(null)} employees={employees} selectedRow={selectedRow} setSelectedRow={setSelectedRow} me={me} setMe={setMe} onReupload={()=>{setDrawer(null); fileInput.current?.click();}}/>
+      <HistoryDrawer open={drawer==="historico"} onClose={()=>setDrawer(null)} history={history} currentKey={currentKey} onLoad={loadFromHistory} onDelete={deleteFromHistory} onUpload={()=>{setDrawer(null); fileInput.current?.click();}}/>
       <CodesDrawer open={drawer==="horarios"} onClose={()=>setDrawer(null)} codes={codes} setCodes={setCodes}/>
       <TradesDrawer open={drawer==="trocas"} onClose={()=>setDrawer(null)} employees={employees} codes={codes} year={year} month={month} me={me}/>
       <ClockDrawer open={drawer==="relogio"} onClose={()=>setDrawer(null)}/>

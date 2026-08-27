@@ -1,0 +1,42 @@
+{
+  "summary": "Tested FaZes/Horário Trabalho end-to-end via the public preview URL. Backend: created pytest suite (/app/backend/tests/backend_test.py) covering health, upload validation, unknown-job 404 and the full async OCR job flow with the real image PDF — 6/6 passed (Gemini vision job finished in ~35s, month=9, year=2026, 7 employees, 30/30 filled days each). Frontend (Playwright): real PDF upload showed the 'PDF em modo imagem — a extrair via OCR no servidor…' notice, then 'Quem és tu?' modal, then the Setembro 2026 calendar with 7 employees/codes (M50, IT2, D, M7, M26, M16, T6); Histórico drawer listed the entry ('Setembro 2026 · 7 pessoas' + 'Atual' badge); month navigation showed/hid month-mismatch-warning correctly; history load closes the drawer and loads the schedule; history delete removes the entry from UI + localStorage; page reload kept schedule and history (fazes:history:v1); offline badge appeared with context.set_offline(True) and the offline image-PDF upload produced the clear Portuguese error about needing internet for OCR (no crash), badge disappeared back online. Auto-load on month navigation was additionally verified with a seeded 2-month history (prev-month switched to the saved Agosto 2026 schedule with no warning). No console/runtime errors observed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Calendar with month mismatch (e.g. Outubro 2026 while Setembro is loaded)",
+        "issues": [
+          "Besides the warning banner, the grid and the 'RESUMO DE OUTUBRO · 30 DIAS COM CÓDIGO' summary are still filled with the other month's codes, which can be misread as real data; day 31 renders an empty cell with a stray '·'. Consider dimming/blanking the grid or labelling it 'dados de Setembro'."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Optional (testability): data-testid=\"drawer-close\" is duplicated on all four always-mounted drawers (pessoas/horarios/trocas/relogio/historico). Off-screen drawers are still in the DOM and intercept pointer events, which makes automation clicks resolve to hidden elements. Suggest per-drawer testids (e.g. drawer-close-historico) and/or pointer-events:none + inert when closed.",
+    "Optional (UX): consider muting the calendar/summary when the visible month does not match the loaded schedule (see design_issues)."
+  ],
+  "critical_code_review_comments": [
+    "App.js is 890 lines — consider splitting drawers/modals into separate components (already partially done with MonthCalendar/CodesDrawer).",
+    "Backend job store (_JOBS) is in-memory; a backend restart/hot-reload during a 30-60s OCR loses the job and the frontend polls until timeout. Acceptable for the current single-pod preview, but note it for production/multi-replica.",
+    "history entries store the entire schedule per month in localStorage (capped at 24). saveJSON swallows quota errors silently — a user hitting quota gets no feedback; consider surfacing a warning."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py"
+  ],
+  "success_rate": {"backend": "100% (6/6)", "frontend": "100% (7/7 flows)"},
+  "seed_data_creation": "For the month-auto-load check, two synthetic schedules (SEED_9_2026.pdf / SEED_8_2026.pdf) were injected into localStorage in a throwaway browser context only; no server-side data created. Real PDF /app/test_files/HORARIO_TTAES_PLACA_SETEMBRO_2026.pdf used for the OCR flows (2 online OCR runs total).",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "N/A - app has no auth (/app/memory/test_credentials.md exists but is not needed)",
+  "context_for_next_testing_agent": "browser_automation_tool starts a fresh browser context each run, so localStorage does NOT persist between tool calls — do the whole flow in one script, or seed localStorage (fazes:schedule:v1, fazes:history:v1) via page.evaluate to avoid paying 35-60s per OCR upload. When seeding a schedule, the 'Quem és tu?' me-modal appears on reload and blocks all clicks: dismiss it with [data-testid=\"me-pick-1\"]. Always scope drawer-close clicks (use .last on '[data-testid=\"history-drawer\"] [data-testid=\"drawer-close\"]') because 4 drawers share that testid. History item testids include the title, e.g. history-load-2026-9-HORARIO_TTAES_PLACA_SETEMBRO_2026.pdf; prefer prefix selectors [data-testid^=\"history-load-\"]. Backend regression suite: pytest /app/backend/tests/backend_test.py (runs in ~35s, xdist configured in pytest.ini).",
+  "rca_of_the_issue": "No functional defects found in the new features (history, month navigation + auto-load, mismatch warning, offline badge/error). Earlier test-run failures were purely selector/environment artefacts: duplicated drawer-close testids on hidden always-mounted drawers, and the fresh browser context wiping localStorage between tool calls."
+}

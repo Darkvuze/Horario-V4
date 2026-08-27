@@ -3,6 +3,7 @@ const KEYS = {
   SCHEDULE: "fazes:schedule:v1",
   SELECTED: "fazes:selected:v1",
   REGION: "fazes:region:v1",
+  HISTORY: "fazes:history:v1",
 };
 
 export function loadJSON(key, fallback) {
@@ -32,4 +33,6 @@ export const Storage = {
   saveSelected: (v) => saveJSON(KEYS.SELECTED, v),
   loadRegion: () => loadJSON(KEYS.REGION, "acores"),
   saveRegion: (v) => saveJSON(KEYS.REGION, v),
+  loadHistory: () => loadJSON(KEYS.HISTORY, []),
+  saveHistory: (v) => saveJSON(KEYS.HISTORY, v),
 };

@@ -63,8 +63,13 @@
 - ✅ Validado PDF OAES SETEMBRO 2026 (32 funcionários, multi-página, imagem)
 - ✅ Validado PDF TTAES PLACA SETEMBRO 2026 (7 funcionários, imagem) — corrigido bug de fusão de códigos iguais consecutivos (IT2 IT2) que desviava a linha; verificação célula a célula 100%
 
+### V5 (Jun 2026 — Histórico + Offline)
+- ✅ **Histórico de Escalas** (`fazes:history:v1`, máx. 24): cada PDF processado fica guardado; drawer no menu 3-pontinhos com carregar/apagar; badge "Atual"
+- ✅ Navegação de mês (setas) carrega automaticamente a escala guardada desse mês; aviso + calendário esbatido quando o mês visível não tem escala
+- ✅ Badge "Offline" no header (navigator.onLine); mensagem clara quando PDF-imagem precisa de OCR sem internet; PDFs com texto funcionam 100% offline (pdfjs no browser)
+- ✅ Testado com testing_agent: backend 6/6, frontend 7/7 (report: /app/test_reports/iteration_1.json; suite pytest em /app/backend/tests/backend_test.py)
+
 ## Backlog (P1/P2)
-- **P0 — Offline TOTAL**: substituir parser do servidor por `pdfjs-dist` (parser dentro do navegador). Atualmente a app funciona offline depois do upload, mas o upload em si precisa de rede.
 - P1: Migrar `_JOBS` (dict em memória em server.py) para Mongo — jobs perdem-se se o backend reiniciar durante processamento
 - P1: Notificações push nativas
 - P1: Botão "Adicionar todos os turnos ao Google Calendar" via deep-link
