@@ -56,8 +56,16 @@
 - ✅ **Nome do feriado** visível dentro da célula do calendário (ex: "Dia do Trabalhador", "Domingo do Espírito Santo")
 - ✅ Sidebar removida (mais espaço para o calendário no telemóvel)
 
+### V4 (Jun 2026 — PDFs de imagem / qualquer formato)
+- ✅ Fallback **Gemini 3 Flash Vision** (Emergent LLM Key) para PDFs rasterizados/sem texto (ex: exports macOS Quartz), multi-página
+- ✅ Renderização com `pypdfium2` (dpi=170, max_side=2300, JPEG q85); páginas processadas sequencialmente (key não suporta paralelo)
+- ✅ Jobs assíncronos + polling (`POST /api/parse-schedule` → job_id; `GET /api/parse-schedule/{job_id}`) para contornar timeout 60s do ingress — NÃO REMOVER
+- ✅ Validado PDF OAES SETEMBRO 2026 (32 funcionários, multi-página, imagem)
+- ✅ Validado PDF TTAES PLACA SETEMBRO 2026 (7 funcionários, imagem) — corrigido bug de fusão de códigos iguais consecutivos (IT2 IT2) que desviava a linha; verificação célula a célula 100%
+
 ## Backlog (P1/P2)
 - **P0 — Offline TOTAL**: substituir parser do servidor por `pdfjs-dist` (parser dentro do navegador). Atualmente a app funciona offline depois do upload, mas o upload em si precisa de rede.
+- P1: Migrar `_JOBS` (dict em memória em server.py) para Mongo — jobs perdem-se se o backend reiniciar durante processamento
 - P1: Notificações push nativas
 - P1: Botão "Adicionar todos os turnos ao Google Calendar" via deep-link
 - P2: Suporte XLSX

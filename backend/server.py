@@ -224,7 +224,7 @@ def _render_pdf_pages_to_jpeg(pdf_bytes: bytes, dpi: int = 140) -> list[bytes]:
         for page in doc:
             pil = page.render(scale=scale).to_pil()
             # Cap dimensions so payload stays small (faster vision inference).
-            max_side = 1700
+            max_side = 2300
             if max(pil.size) > max_side:
                 ratio = max_side / max(pil.size)
                 new_size = (int(pil.size[0] * ratio), int(pil.size[1] * ratio))
@@ -258,6 +258,8 @@ Regras:
 - Cada funcionário: linha com "NNNNNNNN - Nome Apelido" (ou "NNNNNNNN- Nome Apelido").
 - Para cada dia (colunas 1..28/29/30/31), lê o código EXATO (ex: "M14","T6A","IT2","D","F","102","796","P24","M96","FCD","M15").
 - Se a célula está vazia, omite a chave (não uses "").
+- ATENÇÃO: o mesmo código pode repetir-se em dias consecutivos (ex: dia 13 = "IT2" E dia 14 = "IT2"). NUNCA fundas duas células iguais numa só — lê célula a célula, alinhando cada uma com o número do dia no cabeçalho.
+- Antes de devolver, confirma que cada funcionário tem um código para CADA célula preenchida (normalmente todos os dias do mês). Se a linha termina no último dia do mês, o último dia NÃO pode ficar vazio.
 - Não inventes códigos. Não juntes códigos de células diferentes.
 - Não incluas linhas de totais, legendas, cabeçalhos, assinaturas.
 - Se esta página não tem funcionários (só legenda/totais), devolve employees: [].
@@ -300,7 +302,7 @@ async def parse_schedule_pdf_vision(pdf_bytes: bytes, filename: str = "") -> Par
     if not api_key:
         raise RuntimeError("EMERGENT_LLM_KEY não configurada no backend.")
 
-    pages = _render_pdf_pages_to_jpeg(pdf_bytes, dpi=140)
+    pages = _render_pdf_pages_to_jpeg(pdf_bytes, dpi=170)
     if not pages:
         raise RuntimeError("Não foi possível renderizar as páginas do PDF.")
 
