@@ -282,6 +282,15 @@ function extractLegend(allLines) {
   return legend;
 }
 
+// Special error thrown when the PDF has no text layer (image/scanned PDF).
+// The caller (App.js) can then fall back to the backend vision parser.
+export class NoTextLayerError extends Error {
+  constructor(message = "PDF sem camada de texto (imagem/scan). A tentar OCR no servidor…") {
+    super(message);
+    this.name = "NoTextLayerError";
+  }
+}
+
 export async function parseSchedulePdf(file) {
   const buf = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
@@ -291,6 +300,7 @@ export async function parseSchedulePdf(file) {
   const allLines = []; // collected across all pages for legend extraction
   const title = file.name || "";
   let fullText = "";
+  let totalItems = 0;
 
   for (let pno = 1; pno <= pdf.numPages; pno++) {
     const page = await pdf.getPage(pno);
@@ -299,6 +309,7 @@ export async function parseSchedulePdf(file) {
     const tc = await page.getTextContent();
 
     const items = tc.items || [];
+    totalItems += items.length;
     // Re-construct a flat page text for month/year detection.
     fullText += items.map((it) => it.str || "").join(" ") + "\n";
 
@@ -437,6 +448,11 @@ export async function parseSchedulePdf(file) {
   }
 
   if (employees.length === 0) {
+    // No text layer at all -> definitely a scanned/image PDF. Signal caller
+    // so it can retry through the backend vision parser.
+    if (totalItems === 0) {
+      throw new NoTextLayerError();
+    }
     throw new Error(
       "Não foram detetados funcionários no PDF. Confirma o formato."
     );

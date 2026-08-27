@@ -7,7 +7,7 @@ import { DEFAULT_CODES, resolveCode, inferKind } from "@/lib/codes";
 import { Storage } from "@/lib/storage";
 import { buildIcs, downloadIcs } from "@/lib/ics";
 import { getHolidays, holidayFor } from "@/lib/holidays";
-import { parseSchedulePdf } from "@/lib/pdfParser";
+import { parseSchedulePdf, NoTextLayerError } from "@/lib/pdfParser";
 
 const MONTH_NAMES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const TZ = "Atlantic/Azores";
@@ -432,11 +432,58 @@ export default function App() {
     }
   }, [employees.length, me]); // eslint-disable-line
 
+  async function parseWithBackend(file) {
+    const base = process.env.REACT_APP_BACKEND_URL;
+    const fd = new FormData();
+    fd.append("file", file);
+    const resp = await fetch(`${base}/api/parse-schedule`, { method: "POST", body: fd });
+    if (!resp.ok) {
+      let detail = `HTTP ${resp.status}`;
+      try { const j = await resp.json(); if (j?.detail) detail = j.detail; } catch { /* ignore */ }
+      throw new Error(detail);
+    }
+    const first = await resp.json();
+    if (first.status === "done") return first.result;
+    if (first.status !== "pending" || !first.job_id) {
+      throw new Error(first.detail || "Resposta inesperada do servidor.");
+    }
+    // Poll for up to ~4 minutes.
+    const jobUrl = `${base}/api/parse-schedule/${first.job_id}`;
+    const start = Date.now();
+    while (Date.now() - start < 240000) {
+      await new Promise(r => setTimeout(r, 2500));
+      let poll;
+      try {
+        poll = await fetch(jobUrl);
+      } catch (_e) {
+        continue; // transient network hiccup, retry
+      }
+      if (!poll.ok) continue;
+      const body = await poll.json();
+      if (body.status === "done") return body.result;
+      if (body.status === "error") throw new Error(body.detail || "Falha no OCR.");
+      // still pending — keep polling
+    }
+    throw new Error("Tempo esgotado a extrair o PDF. Tenta novamente.");
+  }
+
   async function handleFile(file) {
     setError(null); setUploading(true);
     try {
-      // 100% offline — PDF parsed in the browser, no backend required.
-      const data = await parseSchedulePdf(file);
+      let data;
+      try {
+        // Fast path: parse locally in the browser (works for text-based PDFs).
+        data = await parseSchedulePdf(file);
+      } catch (err) {
+        if (err instanceof NoTextLayerError) {
+          // PDF sem texto (imagem/scan) — usar OCR via backend (Gemini vision).
+          setError("PDF em modo imagem — a extrair via OCR no servidor…");
+          data = await parseWithBackend(file);
+          setError(null);
+        } else {
+          throw err;
+        }
+      }
       setSchedule(data);
       if (data.year) setYear(data.year);
       if (data.month) setMonth(data.month);
